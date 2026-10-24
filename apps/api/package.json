@@ -8,14 +8,22 @@
     "start": "bun src/index.ts",
     "build": "echo 'api: runs from TS source under Bun, nothing to build'",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate-cli.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.7.12",
     "@stryde/shared": "workspace:*",
-    "hono": "^4.13.13"
+    "better-auth": "^1.7.12",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.13",
+    "postgres": "^3.4.9",
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
+    "drizzle-kit": "^0.31.11",
     "vitest": "^5.0.5"
   }
 }
