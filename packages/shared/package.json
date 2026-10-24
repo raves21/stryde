@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./units": "./src/units.ts",
-    "./constants": "./src/constants.ts"
+    "./constants": "./src/constants.ts",
+    "./auth": "./src/auth.ts"
   },
   "scripts": {
     "build": "echo 'shared: consumed as TS source, nothing to build'",
@@ -15,5 +16,8 @@
   },
   "devDependencies": {
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }
