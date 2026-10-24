@@ -92,7 +92,7 @@ Validation (shared Zod): a set can only have `completedAt` set if the required a
 
 | Table | Purpose |
 |---|---|
-| Better Auth tables (`user`, `session`, `account`, `verification`) | auth. `user` gets extra columns `username` (unique), `displayName`, `avatarUrl`. |
+| Better Auth tables (`user`, `session`, `account`, `verification`) | auth. `user` gets an extra `username` column (unique, from Better Auth's username plugin). Display name and avatar use Better Auth's built-in `name` and `image` columns; the API exposes them as `displayName` / `avatarUrl`. IDs are UUIDs. |
 | `friendships` | `id`, `requesterId`, `addresseeId`, `status` (`pending\|accepted\|declined`), timestamps. Unique on unordered pair. |
 | `friend_mutes` | `userId`, `mutedUserId` |
 | `reactions` | `id`, `userId` (reactor), `sessionId`, `emoji` enum `muscle\|fire\|clap\|trophy\|grimace`, `createdAt`. Unique `(userId, sessionId)`. **Online-only, not synced**; hard delete is fine here. Server rejects reactions to sessions the user can't see. |

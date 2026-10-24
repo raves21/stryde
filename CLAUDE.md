@@ -10,17 +10,20 @@ The rules, reading order, hard rules, conventions and commands in `AGENTS.md` (i
 
 Read `PROGRESS.md` first to learn which phase is in progress and which decisions are already made (tooling versions, token names, shadcn tweaks), and update it at the end of every session.
 
-Phases run in order (index in `IMPLEMENTATION_PLAN.md` §5). v1 is complete after Phase 7; Phases 8–9 (social, notifications) are v2. Don't build v2 features early, for example no social tables or endpoints during v1 phases.
+Phases run in order (index in `IMPLEMENTATION_PLAN.md` §5). v1 is complete after Phase 7; Phases 8–9 (social, notifications) are v2. Don't build v2 features early: the social/notification tables exist since Phase 1 (schema only), but their endpoints and UI belong to Phases 8–9.
 
 ## Commands
 
-The canonical command list is in `AGENTS.md` (some, like `db:*`, `gen:vapid` and `e2e`, arrive in later phases). `bun run format` applies Biome fixes. Running a single test (Vitest):
+The canonical command list is in `AGENTS.md` (`gen:vapid` and `e2e` arrive in later phases). `bun run format` applies Biome fixes. Running a single test (Vitest):
 ```
 cd apps/<web|api> && bunx vitest run path/to/file.test.ts   # or packages/shared
 bunx vitest run -t "test name"
 ```
 Use `bun run test` (Vitest), not `bun test` (Bun's built-in runner, which isn't used here).
-API integration tests need a real Postgres (`docker compose -f docker/compose.dev.yml up -d`) and `DATABASE_URL`.
+API integration tests need a real Postgres (`docker compose -f docker/compose.dev.yml up -d`) and `DATABASE_URL`. They run against `<db>_test`, which Vitest's global setup drops, recreates and migrates on every run; without `DATABASE_URL` they are skipped (`describe.skipIf(!hasDatabase)`).
+```
+DATABASE_URL=postgres://stryde:stryde@localhost:5432/stryde bun run test
+```
 
 ## Big-picture architecture
 
@@ -31,4 +34,5 @@ API integration tests need a real Postgres (`docker compose -f docker/compose.de
 - **Sync protocol** (normative, `DATA_MODEL_AND_SYNC.md` §5): row-level LWW on client `updatedAt` (server clamps it to at most now + 5 min); server takes a per-user advisory lock per push; FKs are `DEFERRABLE INITIALLY DEFERRED` so a batch can arrive in any order; a global `sync_version_seq` trigger sets `serverVersion`; pull skips rows that still have a pending outbox entry. Preset exercises (`userId = null`) arrive by pull and are never pushed.
 - **Server side effects after push** (`DATA_MODEL_AND_SYNC.md` §6): create or hide feed events, notify friends only if the workout finished ≤ 60 min ago, recompute `personal_records` per touched exercise, and send SSE hints. These live in `apps/api/src/services/`. Routes stay thin.
 - **`packages/shared`** is the contract between web and api: Zod schemas for every synced table and API payload, `calc/` (e1RM, best set, volume, PR detection per `PRODUCT_SPEC.md` §6), `units.ts`, and `constants.ts`. When you change a synced table, update the Drizzle schema, Dexie schema, Zod schema and `DATA_MODEL_AND_SYNC.md` together.
+- **Auth & offline boot**: Better Auth (cookie sessions) is mounted at `/api/auth/*` in `apps/api/src/app.ts`; migrations + preset seed run in `src/index.ts` before listening. On the web, the root route's `beforeLoad` trusts the user cached in Dexie `meta.currentUser` so the app opens offline, and revalidates against `/api/me` in the background (401 → forget the session only, never other local data). The FKs between synced tables, the `sync_version_seq` sequence and the `serverVersion` trigger live in the hand-written migration `apps/api/src/db/migrations/0001_sync_infra.sql`; never regenerate or delete it.
 - **PWA**: vite-plugin-pwa with `injectManifest` and a custom `apps/web/src/sw.ts` (precache, push, notificationclick). Safari has no Background Sync, so sync triggers are app start, `online`, `visibilitychange`, a debounced 2 s after writes, and 60 s polling while visible.
