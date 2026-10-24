@@ -14,7 +14,7 @@
 │ React + Vite + TanStack     │   HTTPS       │  cloudflared (existing container)    │
 │ Router                      │◀────────────▶│        │ docker network               │
 │  ├─ Dexie (IndexedDB)       │  /api/sync    │        ▼                             │
-│  │   own data + outbox      │  /api/feed    │  app container (Node)                │
+│  │   own data + outbox      │  /api/feed    │  app container (Bun)                 │
 │  ├─ TanStack Query          │  /api/events  │   ├─ Hono API  /api/*                │
 │  │   social (online-only)   │   (SSE)       │   ├─ Better Auth /api/auth/*         │
 │  └─ Service Worker          │               │   ├─ static SPA (built web app)      │
@@ -33,7 +33,7 @@ Use the **latest stable** version of each at install time; check each library's 
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Monorepo | **pnpm workspaces** | `apps/web`, `apps/api`, `packages/shared` |
+| Runtime & package manager | **Bun** (runtime for the API and tooling; Bun workspaces) | `apps/web`, `apps/api`, `packages/shared`. Single `bun.lock`. |
 | Language | TypeScript (strict) everywhere | |
 | Frontend | React, Vite, **TanStack Router** (file-based routes) | |
 | Styling / components | Tailwind CSS v4 + **shadcn/ui** (Radix primitives) + lucide-react icons | **All UI primitives come from shadcn/ui** (added via the shadcn CLI). Dark only. Tokens in `UI_DESIGN.md`. |
@@ -43,8 +43,8 @@ Use the **latest stable** version of each at install time; check each library's 
 | PWA | **vite-plugin-pwa**, `injectManifest` strategy | Custom SW needed for push handlers |
 | Fonts | `@fontsource/*` (self-hosted, precached) | No Google Fonts CDN |
 | Validation | **Zod** in `packages/shared` | Shared by web + api |
-| Backend | **Hono** on Node (`@hono/node-server`) | |
-| ORM / migrations | **Drizzle ORM** + drizzle-kit | |
+| Backend | **Hono** on Bun (`Bun.serve`, no `@hono/node-server`) | Bun runs TS directly; no API build step. Set `idleTimeout` on `Bun.serve` so SSE isn't cut (default 10 s). |
+| ORM / migrations | **Drizzle ORM** + drizzle-kit | Driver: `postgres` (postgres.js) |
 | DB | **PostgreSQL 17** | |
 | Auth | **Better Auth**: email+password, `username` plugin, Google provider, Drizzle adapter | Cookie sessions, long-lived (60 days, rolling) |
 | Push | **web-push** (VAPID) | |
@@ -118,7 +118,7 @@ POSTGRES_PASSWORD=...             # for db container
 IMAGE_TAG=latest                  # compose uses ghcr.io/<owner>/<repo>:${IMAGE_TAG}
 TUNNEL_NETWORK=cf_tunnel          # external docker network shared with cloudflared
 ```
-Provide `pnpm gen:vapid` script that prints a key pair. The VAPID public key is exposed to the client via `GET /api/config`.
+Provide `bun run gen:vapid` script that prints a key pair. The VAPID public key is exposed to the client via `GET /api/config`.
 
 ---
 
@@ -150,7 +150,7 @@ Keep `PROGRESS.md` at the repo root (see `AGENTS.md`): current phase, checked-of
 - API: integration tests against real Postgres (CI service container): sync protocol, authorization, side effects.
 - Web: repository + sync engine tests with `fake-indexeddb`; a few component tests for set-row logic.
 - Playwright: (1) log a workout offline then sync, (2) template flow, (3) two users + feed (v2).
-- Before marking any phase done: `pnpm typecheck && pnpm lint && pnpm test` green.
+- Before marking any phase done: `bun run typecheck && bun run lint && bun run test` green.
 
 ## 7. Known platform limitations (don't fight these)
 - iOS push requires the PWA be installed to Home Screen (iOS 16.4+). Permission must be requested from a tap.

@@ -15,7 +15,7 @@ If docs conflict: `DATA_MODEL_AND_SYNC.md` wins for data/sync, `PRODUCT_SPEC.md`
 - Work **one phase at a time** using the phase files in `plan/` (index in `IMPLEMENTATION_PLAN.md` §5). Don't start phase N+1 until phase N's acceptance criteria pass.
 - Keep a `PROGRESS.md` at the repo root: current phase, checklist of tasks done, open questions, decisions made. Update it at the end of every session so the next agent can resume.
 - Small commits with conventional messages (`feat(sync): ...`, `fix(web): ...`).
-- Before saying something is done: `pnpm typecheck && pnpm lint && pnpm test` must pass. Don't claim tests pass without running them.
+- Before saying something is done: `bun run typecheck && bun run lint && bun run test` must pass. Don't claim tests pass without running them.
 - When unsure about a product decision, **don't invent features**: pick the simplest option consistent with the spec, record it under "Decisions" in `PROGRESS.md`.
 - Use latest stable library versions and check their current docs; don't rely on remembered APIs for Better Auth, TanStack Router, vite-plugin-pwa, Tailwind v4, Drizzle.
 
@@ -63,15 +63,15 @@ Phase N — <name> (`plan/phase-NN-*.md`)
 
 ## Commands (keep these working)
 ```
-pnpm dev            # api + web with Vite proxy, needs docker compose.dev Postgres
-pnpm build          # all packages
-pnpm typecheck
-pnpm lint
-pnpm test           # unit + integration (needs DATABASE_URL for api integration)
-pnpm db:generate    # drizzle-kit generate migration
-pnpm db:migrate     # apply migrations locally
-pnpm gen:vapid      # print VAPID keypair
-pnpm e2e            # playwright
+bun run dev            # api + web with Vite proxy, needs docker compose.dev Postgres
+bun run build          # all packages
+bun run typecheck
+bun run lint
+bun run test           # Vitest unit + integration (needs DATABASE_URL for api integration); not `bun test`
+bun run db:generate    # drizzle-kit generate migration
+bun run db:migrate     # apply migrations locally
+bun run gen:vapid      # print VAPID keypair
+bun run e2e            # playwright
 ```
 
 ## Definition of done (per task)

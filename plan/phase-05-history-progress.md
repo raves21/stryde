@@ -27,14 +27,14 @@ Users see their history, a binary trained/not-trained calendar, per-exercise pro
 - PR marks computed client-side with `packages/shared/calc`.
 
 ### 4. Calendar
-- `YearGrid`: 53 × 7, binary (trained = volt, else `--surface-3`), month labels, auto-scroll to current week, tap → day's sessions in a `Drawer`.
-- `MonthCalendar`: trained days = volt circle with check, today outlined, prev/next month, tap → day sheet.
+- `YearGrid`: 53 × 7, binary (trained = accent, else `--surface-3`), month labels, auto-scroll to current week, tap → day's sessions in a `Drawer`.
+- `MonthCalendar`: trained days = accent circle with check, today outlined, prev/next month, tap → day sheet.
 - `WeekStrip` for the Today screen.
 - All based on `session.localDate` of finished, non-deleted sessions.
 
 ### 5. Exercise detail (`/exercises/$id`)
 - Headline metric with delta vs. 3 months ago.
-- `ExerciseChart` built with **shadcn `Chart`** (Recharts) using token colors: volt line, gold dots on PR points, minimal grid, custom tooltip.
+- `ExerciseChart` built with **shadcn `Chart`** (Recharts) using token colors: accent line, gold dots on PR points, minimal grid, custom tooltip.
 - Metric switcher per exercise type (shadcn `ToggleGroup`), range chips 1M / 3M / 6M / 1Y / All.
 - Personal records list and per-session history.
 

@@ -14,7 +14,8 @@ Friends get notified when you finish a shared workout; you get reactions and fri
 ## Tasks
 
 ### 1. VAPID & config
-- `pnpm gen:vapid` script (web-push `generateVAPIDKeys`).
+- `bun run gen:vapid` script (web-push `generateVAPIDKeys`).
+- web-push relies on `node:crypto`; add a test that signs and encrypts a payload under Bun so any runtime incompatibility surfaces early.
 - Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. `GET /api/config` exposes the public key.
 
 ### 2. Service worker (`apps/web/src/sw.ts`)
@@ -45,7 +46,7 @@ Friends get notified when you finish a shared workout; you get reactions and fri
 ### 6. SSE (`GET /api/events`)
 - Hono `streamSSE`; in-memory hub keyed by userId (single instance).
 - Events: `sync` (own data changed on another device → client runs `syncNow()`), `feed` (invalidate feed query), `notification` (refresh bell count).
-- Headers `Content-Type: text/event-stream`, `Cache-Control: no-cache`; heartbeat comment every **25 s** (Cloudflare idle timeout ~100 s). Client uses `EventSource` with reconnect; only connects while online and the app is visible.
+- Headers `Content-Type: text/event-stream`, `Cache-Control: no-cache`; heartbeat comment every **25 s** (Cloudflare idle timeout ~100 s). `Bun.serve` `idleTimeout` must exceed the heartbeat interval (e.g. 60 s, or `0`). Client uses `EventSource` with reconnect; only connects while online and the app is visible.
 - Emit `sync` to the user's other devices after a push; `feed` to friends after a feed event is created/hidden; `notification` after `notify`.
 
 ### 7. UI

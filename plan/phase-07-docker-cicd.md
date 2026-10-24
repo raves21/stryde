@@ -14,10 +14,10 @@
 ## Tasks
 
 ### 1. Dockerfile (`docker/Dockerfile`, multi-stage)
-- Base: current Node LTS alpine.
-- `deps` stage: enable corepack, `pnpm fetch` / `pnpm install --frozen-lockfile`.
-- `build` stage: build `packages/shared`, `apps/web` (Vite), `apps/api`.
-- `runtime` stage: only API dist, production deps (`pnpm deploy --prod` for the api package), migrations folder, web build copied to `/app/public`. Non-root user. `ENV NODE_ENV=production`. `ARG GIT_SHA` → `ENV GIT_SHA`. `HEALTHCHECK` hitting `/api/health`. `EXPOSE 3000`.
+- Base: `oven/bun` (pinned to the same Bun version as `packageManager`; `-alpine` or `-slim` variant).
+- `deps` stage: `bun install --frozen-lockfile`.
+- `build` stage: build `apps/web` (Vite). The API and `packages/shared` run from TS source under Bun (no compile step).
+- `runtime` stage: API + shared source, production deps (`bun install --production --frozen-lockfile`), migrations folder, web build copied to `/app/public`. `CMD ["bun", "apps/api/src/index.ts"]`. Non-root user (`bun` user in the image). `ENV NODE_ENV=production`. `ARG GIT_SHA` → `ENV GIT_SHA`. `HEALTHCHECK` hitting `/api/health`. `EXPOSE 3000`.
 - `.dockerignore` (node_modules, dist, .git, .env, tests output).
 
 ### 2. Static serving in the API
@@ -49,7 +49,7 @@ volumes: { pgdata: {}, uploads: {} }
 - No published ports. Cloudflare Tunnel public hostname → `http://app:3000` (service name reachable on the shared network; use a unique container/alias name like `stryde-app` if `app` clashes with other projects).
 
 ### 4. CI (`.github/workflows/ci.yml`, on PR + push)
-- pnpm install with cache → typecheck → lint → unit tests → API integration tests with a `postgres:17` service container (`DATABASE_URL` env) → build.
+- `oven-sh/setup-bun` (pinned version) → `bun install --frozen-lockfile` with cache → typecheck → lint → unit tests → API integration tests with a `postgres:17` service container (`DATABASE_URL` env) → build.
 
 ### 5. Deploy (`.github/workflows/deploy.yml`)
 - Trigger: push to `main` (after CI succeeds, e.g. `workflow_run` or same workflow with `needs`), plus `workflow_dispatch` with optional input `tag` for rollbacks.
@@ -77,7 +77,7 @@ volumes: { pgdata: {}, uploads: {} }
 - (SSE comes in Phase 9: needs `text/event-stream`, `no-cache`, heartbeat every 25 s because Cloudflare drops idle connections at ~100 s.)
 
 ### 8. Docs: `docs/deploy-home-server.md`
-- Prereqs, server setup steps, `.env` reference (link to `.env.example`), Google OAuth console setup (authorized origin + redirect URI), VAPID key generation (`pnpm gen:vapid`, for v2), GitHub secrets/variables list, Cloudflare settings, how to deploy, view logs (`docker compose logs -f app`), roll back (run deploy workflow with an older SHA), and DB shell access.
+- Prereqs, server setup steps, `.env` reference (link to `.env.example`), Google OAuth console setup (authorized origin + redirect URI), VAPID key generation (`bun run gen:vapid`, for v2), GitHub secrets/variables list, Cloudflare settings, how to deploy, view logs (`docker compose logs -f app`), roll back (run deploy workflow with an older SHA), and DB shell access.
 
 ## Acceptance criteria
 - [ ] Merge to `main` → image in GHCR → server updated automatically → health check returns the new SHA.
