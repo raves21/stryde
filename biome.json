@@ -2,7 +2,7 @@
   "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/routeTree.gen.ts", "!**/components/ui", "!**/*.md"]
+    "includes": ["**", "!**/routeTree.gen.ts", "!**/db/migrations", "!**/components/ui", "!**/*.md"]
   },
   "formatter": {
     "enabled": true,
