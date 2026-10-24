@@ -8,13 +8,13 @@ The rules, reading order, hard rules, conventions and commands in `AGENTS.md` (i
 
 ## Current state
 
-The repo is currently **specs only**: no code or `package.json` yet. The first piece of work is Phase 0 (`plan/phase-00-scaffold.md`), which creates the Bun workspace monorepo. Read `PROGRESS.md` first to learn which phase is in progress and which decisions are already made, and update it at the end of every session.
+Read `PROGRESS.md` first to learn which phase is in progress and which decisions are already made (tooling versions, token names, shadcn tweaks), and update it at the end of every session.
 
 Phases run in order (index in `IMPLEMENTATION_PLAN.md` §5). v1 is complete after Phase 7; Phases 8–9 (social, notifications) are v2. Don't build v2 features early, for example no social tables or endpoints during v1 phases.
 
 ## Commands
 
-The canonical command list is in `AGENTS.md`. They exist only once Phase 0 is done. Running a single test (Vitest):
+The canonical command list is in `AGENTS.md` (some, like `db:*`, `gen:vapid` and `e2e`, arrive in later phases). `bun run format` applies Biome fixes. Running a single test (Vitest):
 ```
 cd apps/<web|api> && bunx vitest run path/to/file.test.ts   # or packages/shared
 bunx vitest run -t "test name"
