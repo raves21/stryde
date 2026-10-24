@@ -1,0 +1,19 @@
+{
+  "name": "@stryde/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./units": "./src/units.ts",
+    "./constants": "./src/constants.ts"
+  },
+  "scripts": {
+    "build": "echo 'shared: consumed as TS source, nothing to build'",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}
