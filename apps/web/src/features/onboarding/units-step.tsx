@@ -2,13 +2,13 @@ import type { WeightUnit } from '@stryde/shared'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { setPendingUnit } from '@/db/meta'
+import { updateSettings } from '@/db/repositories/settings'
 
 export function UnitsStep({ initial, onDone }: { initial: WeightUnit; onDone: () => void }) {
   const [unit, setUnit] = useState<WeightUnit>(initial)
 
   async function next() {
-    await setPendingUnit(unit)
+    await updateSettings({ unit })
     onDone()
   }
 

@@ -1,6 +1,7 @@
 import { clearCurrentUser, clearLocalData, getCurrentUser, setCurrentUser } from '@/db/meta'
 import { fetchMe, type Me } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
+import { stopSync } from '@/sync/controller'
 
 /**
  * Who is signed in, for the route guard. A cached user wins so the app opens
@@ -43,7 +44,14 @@ export async function completeSignIn(): Promise<Me> {
   return result.me
 }
 
+/** The sync engine got a 401: forget the session, keep the outbox for the same user. */
+export async function forgetSession(): Promise<void> {
+  await clearCurrentUser()
+}
+
 export async function signOut(): Promise<void> {
   await authClient.signOut()
+  // A pull finishing after the wipe would leave rows without an owner.
+  await stopSync()
   await clearLocalData()
 }

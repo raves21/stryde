@@ -1,35 +1,14 @@
-import 'fake-indexeddb/auto'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Me } from '@/lib/api'
-import { StrydeDb } from './db'
+import { freshDb, me } from '@/test/local-db'
+import type { StrydeDb } from './db'
 import {
   clearCurrentUser,
   getCurrentUser,
-  getPendingUnit,
+  getMeta,
+  getOwner,
   setCurrentUser,
-  setPendingUnit,
+  setMeta,
 } from './meta'
-
-function me(id: string, username: string | null = 'juandc'): Me {
-  return {
-    user: {
-      id,
-      email: `${id}@example.com`,
-      username,
-      displayName: 'Juan Dela Cruz',
-      avatarUrl: null,
-      createdAt: '2026-10-24T00:00:00.000Z',
-    },
-    settings: { unit: 'kg', defaultRestSeconds: 120 },
-    needsOnboarding: username === null,
-  }
-}
-
-let n = 0
-function freshDb() {
-  n += 1
-  return new StrydeDb(`test-${n}`)
-}
 
 describe('meta: current user', () => {
   let db: StrydeDb
@@ -47,26 +26,37 @@ describe('meta: current user', () => {
   it('keeps local data when the same user signs in again', async () => {
     db = freshDb()
     await setCurrentUser(me('a'), db)
-    await setPendingUnit('lb', db)
+    await setMeta('marker', 'lb', db)
     await setCurrentUser(me('a'), db)
-    expect(await getPendingUnit(db)).toBe('lb')
+    expect(await getMeta('marker', db)).toBe('lb')
   })
 
   it('clears local data when a different user signs in', async () => {
     db = freshDb()
     await setCurrentUser(me('a'), db)
-    await setPendingUnit('lb', db)
+    await setMeta('marker', 'lb', db)
     await setCurrentUser(me('b'), db)
-    expect(await getPendingUnit(db)).toBeNull()
+    expect(await getMeta('marker', db)).toBeUndefined()
     expect((await getCurrentUser(db))?.user.id).toBe('b')
   })
 
   it('clearCurrentUser removes only the session', async () => {
     db = freshDb()
     await setCurrentUser(me('a'), db)
-    await setPendingUnit('kg', db)
+    await setMeta('marker', 'kg', db)
     await clearCurrentUser(db)
     expect(await getCurrentUser(db)).toBeNull()
-    expect(await getPendingUnit(db)).toBe('kg')
+    expect(await getMeta('marker', db)).toBe('kg')
+    expect(await getOwner(db)).toEqual({ id: 'a', username: 'juandc' })
+  })
+
+  it("clears the previous owner's data after a 401 when someone else signs in", async () => {
+    db = freshDb()
+    await setCurrentUser(me('a'), db)
+    await setMeta('marker', 'kg', db)
+    await clearCurrentUser(db)
+    await setCurrentUser(me('b', 'other'), db)
+    expect(await getMeta('marker', db)).toBeUndefined()
+    expect(await getOwner(db)).toEqual({ id: 'b', username: 'other' })
   })
 })

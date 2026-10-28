@@ -5,25 +5,46 @@ import { db as defaultDb, type StrydeDb } from './db'
 // through a synced-table repository.
 
 const CURRENT_USER = 'currentUser'
-const PENDING_UNIT = 'onboarding.unit'
+const OWNER = 'owner'
+
+/** Whose data the local database holds. Unlike the session cache, it survives a 401. */
+export type Owner = { id: string; username: string | null }
+
+export async function getMeta<T>(key: string, db: StrydeDb = defaultDb): Promise<T | undefined> {
+  return (await db.meta.get(key))?.value as T | undefined
+}
+
+export async function setMeta(key: string, value: unknown, db: StrydeDb = defaultDb) {
+  await db.meta.put({ key, value })
+}
 
 export async function getCurrentUser(db: StrydeDb = defaultDb): Promise<Me | null> {
-  const row = await db.meta.get(CURRENT_USER)
-  return (row?.value as Me | undefined) ?? null
+  return (await getMeta<Me>(CURRENT_USER, db)) ?? null
+}
+
+export async function getOwner(db: StrydeDb = defaultDb): Promise<Owner | null> {
+  const owner = await getMeta<Owner>(OWNER, db)
+  if (owner) return owner
+  // Databases from before the owner key: the cached user owned the data.
+  const me = await getCurrentUser(db)
+  return me ? { id: me.user.id, username: me.user.username } : null
 }
 
 /**
- * Cache the signed-in user. Signing in as a different user clears the whole
- * local database first (DATA_MODEL_AND_SYNC.md §4).
+ * Cache the signed-in user. Signing in as a different user than the owner of the
+ * local data clears the whole local database first, including unsynced changes
+ * (DATA_MODEL_AND_SYNC.md §4; the login screen warns about them beforehand).
  */
 export async function setCurrentUser(me: Me, db: StrydeDb = defaultDb): Promise<void> {
   await db.transaction('rw', db.tables, async () => {
-    const previous = await db.meta.get(CURRENT_USER)
-    const previousId = (previous?.value as Me | undefined)?.user.id
-    if (previousId && previousId !== me.user.id) {
+    const owner = await getOwner(db)
+    if (owner && owner.id !== me.user.id) {
       await Promise.all(db.tables.map((t) => t.clear()))
     }
-    await db.meta.put({ key: CURRENT_USER, value: me })
+    await db.meta.bulkPut([
+      { key: CURRENT_USER, value: me },
+      { key: OWNER, value: { id: me.user.id, username: me.user.username } satisfies Owner },
+    ])
   })
 }
 
@@ -37,17 +58,4 @@ export async function clearLocalData(db: StrydeDb = defaultDb): Promise<void> {
   await db.transaction('rw', db.tables, async () => {
     await Promise.all(db.tables.map((t) => t.clear()))
   })
-}
-
-/**
- * Unit picked during onboarding. user_settings is a synced table, so it can only
- * be written through repositories (Phase 2); until then the choice waits here.
- */
-export async function setPendingUnit(unit: 'kg' | 'lb', db: StrydeDb = defaultDb): Promise<void> {
-  await db.meta.put({ key: PENDING_UNIT, value: unit })
-}
-
-export async function getPendingUnit(db: StrydeDb = defaultDb): Promise<'kg' | 'lb' | null> {
-  const row = await db.meta.get(PENDING_UNIT)
-  return row?.value === 'kg' || row?.value === 'lb' ? row.value : null
 }

@@ -1,6 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "includes": ["**", "!**/routeTree.gen.ts", "!**/db/migrations", "!**/components/ui", "!**/*.md"]
   },
@@ -11,17 +15,58 @@
     "lineWidth": 100
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded", "trailingCommas": "all" }
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all"
+    }
   },
   "css": {
-    "parser": { "tailwindDirectives": true }
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "suspicious": { "noExplicitAny": "error" }
+      "suspicious": {
+        "noExplicitAny": "error"
+      }
     }
   },
-  "assist": { "enabled": true, "actions": { "source": { "organizeImports": "on" } } }
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/web/src/routes/**",
+        "apps/web/src/components/**",
+        "apps/web/src/features/*/components/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@/db/db": "Components read/write own data through repositories or hooks, never the Dexie db directly (AGENTS.md hard rule 1).",
+                  "dexie": "Components read/write own data through repositories or hooks, never the Dexie db directly (AGENTS.md hard rule 1).",
+                  "@/sync/engine": "Components use the sync controller, hooks and status store.",
+                  "@/sync/transport": "Components use the sync controller, hooks and status store."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
