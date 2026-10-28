@@ -8,6 +8,7 @@
     "./units": "./src/units.ts",
     "./constants": "./src/constants.ts",
     "./auth": "./src/auth.ts",
+    "./calc": "./src/calc/index.ts",
     "./schemas": "./src/schemas/index.ts"
   },
   "scripts": {
