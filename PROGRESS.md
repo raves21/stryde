@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 4 — Active Workout Logging (`plan/phase-04-active-workout.md`): **done**, all acceptance criteria pass. Next: Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.md`), not started.
+Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.md`): **done**, all acceptance criteria pass. Next: Phase 6 — PWA & Offline (`plan/phase-06-pwa-offline.md`), not started.
 (Phase 1 still has two owner-verification items, see Open questions.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -56,6 +56,17 @@ Phase 4 — Active Workout Logging (`plan/phase-04-active-workout.md`): **done**
   - [x] Tests: calc (table-driven), workout rules, workout repository, `SetRow` component (✓ disabled until reps on RIR/failure; Testing Library + happy-dom), template set copy regression
   - [x] Playwright e2e (`bun run e2e`): template → log sets incl. failure set → reload mid-workout (sets + rest timer resume) → finish → on the server; then the whole workout offline → syncs after reconnect
 
+- [x] Phase 5 — History, Calendar, Progress & PRs
+  - [x] Calc (`packages/shared/src/calc/`): `maxReps`, `totalReps`, `longestDuration`, `prTimeline`, `computeAllPRs`, `CHART_METRICS`, `sessionMetric`, `seriesForChart`; tests cover failure/RIR sets, bodyweight with/without added weight, timed, warm-ups, baseline, edited history lowering a PR, reps > 15, deleted baseline
+  - [x] Server: `onSessionsChanged` → `recomputePersonalRecords` rebuilds `personal_records` per touched exercise from the user's finished history with `computeAllPRs`; integration tests (baseline, heavier session, edit lowers, delete recomputes)
+  - [x] Web: `getTrainingRows` + pure `buildTraining` (`lib/training.ts`: session summaries, PR events per session/set, records, trained days, recent PRs, template last-done) + `computeStats`, `weekDays`; `useTraining()` live hook
+  - [x] `/history` (month groups, sticky headers), `/workout/$sessionId` session detail (tiles, PR cards, set rows with 🏆, notes, Edit, share toggle, Delete), edit "Done" returns to detail
+  - [x] Calendar: `YearGrid` (53×7 binary, month labels, scrolled to now), `MonthCalendar`, `WeekStrip`, `DaySheet`
+  - [x] `/exercises/$id`: headline metric + delta vs 3 months ago, `ExerciseChart` (shadcn Chart/Recharts, volt line, gold PR dots, tooltip), metric switcher, 1M/3M/6M/1Y/All, records list, per-session history
+  - [x] `/progress`: week/month/year/total tiles, Year/Month calendar tabs, recent PRs, lifetime volume / this month / sets
+  - [x] Today: week strip, recent workouts (last 3) + See all, empty state, template "Last done …"; shared `StatTile`, `PRBadge`
+  - [x] Browser-verified offline (Playwright): 6 seeded sessions over 10 weeks → Today, Progress (year + month), exercise chart with gold PR dots, session detail with PR marks; editing the latest session down lowered records locally (82.5 → 80 kg, e1RM 99 → 96)
+
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
@@ -99,6 +110,10 @@ Phase 4 — Active Workout Logging (`plan/phase-04-active-workout.md`): **done**
 - 2026-10-28: Completing a set in edit mode dates it at the session's `finishedAt`. Clearing a required value on a completed set (or a kind change that needs RIR) un-completes it instead of failing validation.
 - 2026-10-28: Inline per-set PR hint during the workout (UI_DESIGN.md §5.4) is not built yet; PRs show on the finish sheet. — Phase 5 owns PR display.
 - 2026-10-28: Repositories build new rows from the database inside the transaction, never from on-screen state. — The e2e caught "Add set" copying a weight still waiting on the editor's debounce.
+- 2026-10-28: PR display (history counts, session detail, records, recent PRs, chart dots) comes from one timeline per exercise (`prTimeline` over all finished sessions), recomputed live from Dexie; the server stores only current records (`personal_records`). — One source of truth; edits and deletes are reflected everywhere.
+- 2026-10-28: Charts: weighted = e1RM / Best set (top-set weight) / Volume; bodyweight = Max reps / Total reps / e1RM (added weight); timed = Duration. PR dots: e1RM↔e1rm, Best set↔weight, Volume↔volume, Max reps↔max_reps, Duration↔duration; Total reps has none.
+- 2026-10-28: Headline delta compares the latest session's value with the latest one at least 90 days old; hidden when there is none. Weeks start Monday; stats use session `localDate`s.
+- 2026-10-28: `feed_events.prs` isn't written yet: feed events are created in Phase 8, which can call the same timeline.
 - 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
@@ -110,7 +125,7 @@ Phase 4 — Active Workout Logging (`plan/phase-04-active-workout.md`): **done**
 - Integration tests: `DATABASE_URL=… bun run test` runs API tests on `<db>_test` and the web convergence test against a real API process on `<db>_web_test` (started by `apps/web/src/test/api-server.ts`). Test timestamps must stay within now + 5 min, or the server clamps them.
 - Own-data writes: `mutate(tables, (w) => …)` in `db/repositories/core.ts`. Pass every table the callback reads or writes. Reads for UI: repository list/get functions wrapped in `useLiveQuery` inside a hook.
 - `requestSync()` (`sync/controller.ts`) syncs immediately: call it after finishing a workout (Phase 4).
-- Phase 5: session detail `/workout/$sessionId` should link to `/workout/$sessionId/edit` (only reachable from the "Workout saved" toast now). `computeAllPRs` + chart series go in `packages/shared/src/calc/`; server PR recompute fills `onSessionsChanged`.
+- Vite dev may reload once the first time a newly used dependency is imported (e.g. recharts); harmless, but browser scripts should allow for it.
 - Offline checks in a browser need the route chunks loaded first until the Phase 6 service worker precaches them (code-split routes can't load offline).
 - `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) is where Phase 5 PR recompute and Phases 8–9 feed/notifications go.
 - fontsource imports pull in every subset (cyrillic, greek, vietnamese…). Consider latin/latin-ext-only imports in Phase 6 to keep the SW precache small.
