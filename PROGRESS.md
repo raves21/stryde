@@ -1,7 +1,7 @@
 # Progress
 ## Current phase
-Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.md`): **done**, all acceptance criteria pass. Next: Phase 6 — PWA & Offline (`plan/phase-06-pwa-offline.md`), not started.
-(Phase 1 still has two owner-verification items, see Open questions.)
+Phase 6 — PWA Hardening & Offline Polish (`plan/phase-06-pwa-offline.md`): **done**; acceptance verified in Chromium, real-device install checks are with the owner (see Open questions). Next: Phase 7 — Docker & CI/CD (`plan/phase-07-docker-cicd.md`), not started.
+(Phase 1 still has one owner-verification item: real Google sign-in.)
 ## Done
 - [x] Phase 0 — Scaffold
   - [x] Bun workspaces (`apps/web`, `apps/api`, `packages/shared`), `tsconfig.base.json` (strict, `noUncheckedIndexedAccess`), Biome, Vitest in every package, root scripts
@@ -22,7 +22,7 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
   - [x] Tests: migrations/triggers/deferred FKs/one-active-session/seed idempotency; auth (sign up, sign in by email/username, duplicates, invalid usernames, `/api/me` 401, cookie attributes, update-user username); web `meta` user-switch clearing
   - [x] Browser-verified (Playwright, headless): sign up → onboarding → home; sign out; sign in by username and by email; wrong password error; reload with API unreachable opens as the cached user; cookie revoked → revalidate 401 → `/login`; user without username forced through username onboarding; Google authorize redirect uses `${PUBLIC_URL}/api/auth/callback/google`
   - [ ] Owner: real Google sign-in (needs OAuth credentials)
-  - [ ] DevTools-offline full reload (needs the Phase 6 service worker)
+  - [x] DevTools-offline full reload (done with the Phase 6 service worker; covered by `e2e/offline.spec.ts`)
 - [x] Phase 2 — Local DB & Sync
   - [x] Shared Zod row schemas for all 8 synced tables (`packages/shared/src/schemas/rows.ts`) incl. set completion / RIR / rep-range refinements, `setCompletionError(set, exerciseType)`; payloads `PushRequest`/`PushResponse`/`PullResponse`, `SYNC_TABLES` (parents first)
   - [x] Migration `0002`: the one-active-session index is no longer unique (see Decisions)
@@ -67,6 +67,15 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
   - [x] Today: week strip, recent workouts (last 3) + See all, empty state, template "Last done …"; shared `StatTile`, `PRBadge`
   - [x] Browser-verified offline (Playwright): 6 seeded sessions over 10 weeks → Today, Progress (year + month), exercise chart with gold PR dots, session detail with PR marks; editing the latest session down lowered records locally (82.5 → 80 kg, e1RM 99 → 96)
 
+- [x] Phase 6 — PWA Hardening & Offline Polish
+  - [x] `vite-plugin-pwa` 2 (`injectManifest`, `registerType: 'prompt'`, `injectRegister: false`); custom `src/sw.ts` (precache via `__WB_MANIFEST`, `cleanupOutdatedCaches`, SPA `NavigationRoute` with `/api/*` denylisted, `SKIP_WAITING` message, `clientsClaim`); own `tsconfig.sw.json` (WebWorker lib) in `typecheck`
+  - [x] Manifest (Stryde, standalone, portrait, `/`, `#0A0A0B`), icons 192/512/maskable 512 + apple-touch 180 + SVG/32px favicons (stride mark, `public/`), iOS meta tags; precache 87 entries (~1.5 MB) with latin-only fontsource subsets
+  - [x] Update flow: `UpdatePrompt` (`useRegisterSW`, hourly update check) shows "Update available — Reload" only when no workout is active; withdrawn if one starts (component test)
+  - [x] Install: `beforeinstallprompt` captured at startup, standalone + iOS/Android detection, `InstallGuide` (one-tap install / iOS Share → Add to Home Screen / browser menu) in onboarding and `/settings/install`
+  - [x] Profile hub (§5.14): header with workouts count, Library, Workout (units, default rest, keep screen on, share default), Sync & data → `/settings/sync` (status, last synced, pending, Sync now, rejected changes with dismiss), App (install guide, version = git SHA via `__APP_VERSION__`), Account (sign out with unsynced warning)
+  - [x] Audit: Chrome installability check (CDP `Page.getInstallabilityErrors`) clean, manifest valid, no console errors; Lighthouse mobile: Performance 85, Accessibility 96 → contrast fix, Best practices 96, CLS 0; global `prefers-reduced-motion` rule; 130% text: set-row inputs no longer clip (weight column 72px, digits capped at 20px)
+  - [x] E2E now runs against the production build; new `e2e/offline.spec.ts`: load online → offline → reload → Today + a never-opened route render → log and finish a workout → online → synced
+
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
@@ -86,6 +95,9 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 - 2026-10-24: Sign-out is disabled while offline (the server must clear the httpOnly cookie). The "unsynced changes" warning was added in Phase 2.
 - 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 - 2026-10-24: Auth rate limiting is on in production only (Better Auth default), forceable in dev with `AUTH_RATE_LIMIT=1`; sign-in 10/min and sign-up 5/min per IP.
+- 2026-10-28: Workout settings are inline controls on `/profile` (units toggle, rest select, switches) instead of separate `/settings/units` and `/settings/workout` pages; Sync and Install keep their own pages (`/settings/sync`, `/settings/install`). — Fewer taps, nothing to navigate for one control.
+- 2026-10-28: `--text-faint` is only for placeholders, the "previous" column, icons and disabled states; readable copy uses `--text-muted` (Lighthouse flagged #63636E at 3.3:1). Set-input digits cap at 20px so fixed-width cells survive 130% text.
+- 2026-10-28: The SW checks for updates hourly and on load; "Reload" posts `SKIP_WAITING`. Nothing is cached at runtime: own data is in IndexedDB, social data is online-only.
 - 2026-10-28: The one-active-session partial index is no longer unique (migration `0002`). — With it, the second device's push of its own active session fails, so the conflict can't reach both devices as §8 requires. The repository still refuses to start a second session locally; conflicts are resolved by the dialog. `DATA_MODEL_AND_SYNC.md` §2 updated.
 - 2026-10-28: Sync payload table names are the camelCase Dexie store names (`sessionExercises`, not `session_exercises`). Rows on the wire and in Dexie never carry `serverVersion`.
 - 2026-10-28: The client pushes parents-first by table, then outbox order (spec said outbox order). — A coalesced parent edit moves to the end of the queue, and with >200 entries a child could otherwise land in an earlier batch than its new parent and be rejected for good. LWW is per row, so order between rows doesn't change results.
@@ -118,7 +130,7 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
 - Inline PR hint on a just-completed set (UI_DESIGN.md §5.4: gold 🏆 "e1RM PR" chip on the row): build it in Phase 6 polish with `detectPRs` against `getExerciseHistory`, or drop it from the design?
-- "Reload with DevTools offline" can't pass before Phase 6: without a service worker the browser can't load `index.html` offline at all. The guard itself works without the network (verified by blocking `/api/*` and reloading). Proposal: tick this item in Phase 6.
+- Install on real devices (owner): Android Chrome → Profile → Install app (or the browser's install prompt); iPhone Safari → Share → Add to Home Screen. Both need HTTPS, so this happens once the app is deployed (Phase 7). Chromium's installability check is already clean.
 ## Notes for the next session
 - `apps/api/src/app.ts` is the runtime-agnostic Hono app (tests use `app.request()` under Vitest); `src/index.ts` is the Bun server entry. Keep Bun-only APIs out of `app.ts`.
 - Dev DB: `docker compose -f docker/compose.dev.yml up -d` → `postgres://stryde:stryde@localhost:5432/stryde`. Integration tests: `DATABASE_URL=postgres://stryde:stryde@localhost:5432/stryde bun run test`.
@@ -127,9 +139,8 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 - Own-data writes: `mutate(tables, (w) => …)` in `db/repositories/core.ts`. Pass every table the callback reads or writes. Reads for UI: repository list/get functions wrapped in `useLiveQuery` inside a hook.
 - `requestSync()` (`sync/controller.ts`) syncs immediately (used after finishing a workout and by the indicator's Retry); Settings → "Sync now" (Phase 6) should call it too.
 - Vite dev may reload once the first time a newly used dependency is imported (e.g. recharts); harmless, but browser scripts should allow for it.
-- Offline checks in a browser need the route chunks loaded first until the Phase 6 service worker precaches them (code-split routes can't load offline).
+- Offline checks in `bun run dev` still need route chunks loaded first (no service worker in dev); use the production build (`bun run e2e`, or `vite build && vite preview`) for real offline behaviour.
 - `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5); feed events, notifications and SSE hints (Phases 8–9) go there too.
 - `bun run e2e` (Playwright, `apps/web/e2e/`) needs the dev Postgres; it uses `<db>_e2e` and ports 3100/5180. First run on a machine: `cd apps/web && bunx playwright install chromium`.
 - Local port clash: if 3000 is taken (e.g. another project's dev server), run `PORT=3001 STRYDE_API_PORT=3001 bun run dev`.
-- fontsource imports pull in every subset (cyrillic, greek, vietnamese…). Consider latin/latin-ext-only imports in Phase 6 to keep the SW precache small.
 - Verify `web-push` works under Bun (test planned in Phase 9).
