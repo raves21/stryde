@@ -62,7 +62,7 @@ Presets are delivered via pull like any row (with `userId null`), cached locally
 | `notes` | text null | |
 | `shareWithFriends` | bool | default from user settings |
 
-Constraint (enforced client-side, sanity-checked server-side): at most one session per user with `finishedAt IS NULL AND deletedAt IS NULL`.
+Constraint (enforced client-side): at most one session per user with `finishedAt IS NULL AND deletedAt IS NULL`. The repository refuses to start a second one. The server deliberately does **not** enforce it (no unique index): two devices can each start a workout offline, both must sync, and the client then asks which to keep (§8).
 
 ### `session_exercises`
 `sessionId`, `exerciseId`, `position` int, `supersetGroup` text null, `restSeconds` int null.
@@ -119,8 +119,9 @@ db.version(1).stores({
   sessionExercises:  'id, sessionId, exerciseId, [sessionId+position]',
   sets:              'id, sessionExerciseId, [sessionExerciseId+position], completedAt',
   userSettings:      'id',
-  outbox:            '++seq, table, rowId',      // pending mutations
-  meta:              'key',                      // syncCursor, lastSyncAt, currentUserId, ...
+  outbox:            '++seq, table, rowId, &[table+rowId]', // pending mutations, one per row
+  syncErrors:        '++id',                     // mutations the server rejected
+  meta:              'key',                      // sync.cursor, sync.lastSyncAt, sync.clientId, currentUser, owner
 });
 ```
 
@@ -128,6 +129,8 @@ db.version(1).stores({
 - Outbox entries are **coalesced** per row: if a row already has a pending entry, replace it with the latest full row snapshot (keeps the queue small during rapid set edits).
 - Local derived data (PRs, chart series) is computed from Dexie with the shared calculation module; not stored.
 - On sign-out: if outbox non-empty, warn. On confirm, clear the whole DB. On sign-in as a different user, clear the whole DB.
+- `meta.owner` records whose data the DB holds. Unlike the session cache `meta.currentUser`, it survives a 401, so a different user signing in after a 401 still clears the previous user's data. The login screen warns when the owner has unsynced changes.
+- Store names are the table names used in sync payloads: `exercises`, `templates`, `templateExercises`, `templateSets`, `sessions`, `sessionExercises`, `sets`, `userSettings`. Rows never carry `serverVersion`.
 
 ---
 
@@ -141,7 +144,7 @@ All endpoints require auth (session cookie). JSON. Validated with shared Zod sch
 {
   "clientId": "uuid-of-this-device-install",
   "mutations": [
-    { "table": "sessions", "row": { /* full row incl. id, updatedAt, deletedAt */ } },
+    { "table": "sessions", "row": { /* full row incl. id, updatedAt, deletedAt */ } }, // table = camelCase store name (§4)
     { "table": "sets", "row": { ... } }
   ]
 }
@@ -155,20 +158,24 @@ Server algorithm (one transaction):
 1. `SELECT pg_advisory_xact_lock(hashtext(userId))` — serializes pushes per user (prevents version-ordering gaps between a user's own devices).
 2. For each mutation, in order:
    - Validate with the table's Zod schema; force `userId = auth user`. Preset exercises → reject.
-   - Ownership: referenced parents (e.g. `sessionExerciseId`) must belong to the user (or be a preset exercise).
-   - Upsert **only if** incoming `updatedAt >= existing.updatedAt` (else `ignored_stale`).
+   - Ownership: an existing row with the same id must belong to the user. Referenced parents (e.g. `sessionExerciseId`) must belong to the user, be accepted earlier or later in the same batch, or be a preset exercise. Rejecting a parent rejects its children in the batch.
+   - A completed set must have the actuals its exercise type requires (`setCompletionError` in `packages/shared`).
+   - Clamp `updatedAt` to at most `now + 5 min`, then upsert **only if** incoming `updatedAt >= existing.updatedAt` (else `ignored_stale`).
    - Trigger sets `serverVersion = nextval('sync_version_seq')`.
 3. Foreign keys are `DEFERRABLE INITIALLY DEFERRED` so a batch can contain parent and child in any order.
-4. After commit, run **side effects** (see §6) for affected sessions/exercises.
+4. Tombstone cascade for the touched rows: live children of a tombstoned session/session_exercise/template/template_exercise get the parent's `deletedAt`, and `updatedAt = GREATEST(child.updatedAt, parent.updatedAt)` so devices holding the child accept the tombstone under LWW.
+5. After commit, run **side effects** (see §6) for affected sessions/exercises.
 
-Client sends mutations in outbox order, batches of ≤ 200. Removes outbox entries only for `applied` / `ignored_stale`. `rejected` entries are moved to a `syncErrors` list shown in Settings → Sync (should never happen in practice; log it).
+Client sends mutations ordered by table (parents first: exercises, templates, templateExercises, templateSets, sessions, sessionExercises, sets, userSettings), then outbox order, in batches of ≤ 200. Parents-first guarantees a batch boundary never puts a child before a new parent it references. Entries are removed by `seq`, so a row edited while its push was in flight stays queued with the newer snapshot. Removes outbox entries only for `applied` / `ignored_stale`. `rejected` entries are moved to a `syncErrors` list shown in Settings → Sync (should never happen in practice; log it).
 
 ### `GET /api/sync/pull?cursor=<serverVersion>&limit=1000`
 Returns all rows of the user's own synced tables **and preset exercises** with `serverVersion > cursor`, ordered by `serverVersion`:
 ```jsonc
 { "changes": [ { "table": "sets", "row": { ... } } ], "cursor": "12345", "hasMore": false }
 ```
-Client applies each row with LWW (`incoming.updatedAt >= local.updatedAt`, and **skip rows that have a pending outbox entry** — local pending change wins until pushed), then stores the cursor. Loop while `hasMore`.
+Client applies each row with LWW (`incoming.updatedAt >= local.updatedAt`, and **skip rows that have a pending outbox entry** — local pending change wins until pushed), then stores the cursor, in one transaction. Loop while `hasMore`.
+- Exception: if the incoming row is **strictly newer** than the pending entry, apply it and drop the entry. The push would come back `ignored_stale` anyway, and since the cursor moves past this row now, skipping it would leave the device on the losing version.
+- Server: all tables are read in one `REPEATABLE READ` snapshot (so a push committing mid-pull can't make the cursor skip rows). Every row of a user's stream is written under that user's advisory lock, so no row with a lower version commits after a higher one is visible.
 
 ### Sync loop (client)
 `syncNow()` = push all → pull until done. Single-flight (never two concurrent runs). Triggered by:
@@ -177,7 +184,7 @@ Client applies each row with LWW (`incoming.updatedAt >= local.updatedAt`, and *
 - after finishing a session (immediately)
 - SSE `sync` hint (v2), every 60 s while visible
 
-Retry with exponential backoff on network errors. A `401` stops the loop and routes to login **without clearing the outbox**.
+Retry with exponential backoff on network and server errors (2 s doubling, cap 60 s). A `401` stops the loop and routes to login **without clearing the outbox**. Only one tab syncs at a time (Web Lock `stryde-sync`). Sign-out stops sync and waits for a run in progress before clearing the DB.
 
 ### Initial sync
 New device: pull from cursor `0`. Show a "Downloading your data" state on first login.
