@@ -8,6 +8,8 @@ export default mergeConfig(
       // Dexie captures indexedDB on import, so the fake must load first.
       setupFiles: ['fake-indexeddb/auto'],
       globalSetup: ['./src/test/api-server.ts'],
+      // Playwright specs run with `bun run e2e`.
+      exclude: ['e2e/**', 'node_modules/**'],
     },
   }),
 )

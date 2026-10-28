@@ -18,7 +18,8 @@
     "format": "biome check --write .",
     "test": "bun run --filter '*' test",
     "db:generate": "bun run --filter @stryde/api db:generate",
-    "db:migrate": "bun run --filter @stryde/api db:migrate"
+    "db:migrate": "bun run --filter @stryde/api db:migrate",
+    "e2e": "bun run --filter @stryde/web e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
