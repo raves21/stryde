@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { TriangleAlert, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
+import { StatTile } from '@/components/app/stat-tile'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -77,12 +78,21 @@ export function FinishSheet({
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <Stat label="Sets" value={summary ? String(summary.sets) : '–'} />
-          <Stat
+          <StatTile
+            className="bg-surface-2"
+            label="Sets"
+            value={summary ? String(summary.sets) : '–'}
+          />
+          <StatTile
+            className="bg-surface-2"
             label={`Volume (${unit})`}
             value={summary ? toDisplayWeight(summary.volumeKg, unit, 0).toLocaleString() : '–'}
           />
-          <Stat label="Exercises" value={summary ? String(summary.exercises) : '–'} />
+          <StatTile
+            className="bg-surface-2"
+            label="Exercises"
+            value={summary ? String(summary.exercises) : '–'}
+          />
         </div>
 
         {summary && summary.prs.length > 0 && (
@@ -147,15 +157,6 @@ export function FinishSheet({
         </div>
       </div>
     </BottomSheet>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-surface-2 p-3">
-      <span className="tnum font-display text-[28px] leading-none font-semibold">{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
   )
 }
 

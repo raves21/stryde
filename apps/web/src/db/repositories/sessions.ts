@@ -445,3 +445,29 @@ export async function getExerciseHistory(
   }
   return history
 }
+
+export type TrainingRows = {
+  sessions: SessionRow[]
+  sessionExercises: SessionExerciseRow[]
+  sets: SetRow[]
+  exercises: ExerciseRow[]
+}
+
+/**
+ * Every finished, non-deleted session with its live exercises and sets, plus all
+ * exercises: the input for history, calendar, charts and PRs (all computed locally).
+ */
+export async function getTrainingRows(db: StrydeDb = defaultDb): Promise<TrainingRows> {
+  const sessions = await db.sessions.filter((s) => !s.deletedAt && s.finishedAt !== null).toArray()
+  const ids = sessions.map((s) => s.id)
+  const sessionExercises = (
+    await db.sessionExercises.where('sessionId').anyOf(ids).toArray()
+  ).filter((se) => !se.deletedAt)
+  const sets = (
+    await db.sets
+      .where('sessionExerciseId')
+      .anyOf(sessionExercises.map((se) => se.id))
+      .toArray()
+  ).filter((s) => !s.deletedAt)
+  return { sessions, sessionExercises, sets, exercises: await db.exercises.toArray() }
+}

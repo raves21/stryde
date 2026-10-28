@@ -66,7 +66,12 @@ function EditSession({ tree }: { tree: SessionTree }) {
         title="Edit workout"
         back
         actions={
-          <Button size="sm" onClick={() => void navigate({ to: '/' })}>
+          <Button
+            size="sm"
+            onClick={() =>
+              void navigate({ to: '/workout/$sessionId', params: { sessionId: session.id } })
+            }
+          >
             Done
           </Button>
         }

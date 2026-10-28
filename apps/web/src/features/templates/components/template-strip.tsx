@@ -1,11 +1,12 @@
 import { Link } from '@tanstack/react-router'
+import { formatDistanceToNowStrict } from 'date-fns'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { exercisePreview, useTemplateSummaries } from '../use-templates'
 import { TemplateStartSheet } from './template-start-sheet'
 
 /** Horizontal scroll of template cards on Today (UI_DESIGN.md §5.3). */
-export function TemplateStrip() {
+export function TemplateStrip({ lastDone }: { lastDone?: Map<string, string> }) {
   const templates = useTemplateSummaries()
   const [previewing, setPreviewing] = useState<string | null>(null)
   return (
@@ -24,6 +25,11 @@ export function TemplateStrip() {
           <span className="line-clamp-2 text-xs text-faint">
             {exercisePreview(t.exerciseNames)}
           </span>
+          {lastDone?.get(t.id) && (
+            <span className="text-xs text-muted-foreground">
+              Last done {formatDistanceToNowStrict(lastDone.get(t.id) ?? '', { addSuffix: true })}
+            </span>
+          )}
         </button>
       ))}
       <Link

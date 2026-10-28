@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppFeedRouteImport } from './routes/_app/feed'
+import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppProgressRouteImport } from './routes/_app/progress'
 import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
@@ -23,6 +24,7 @@ import { Route as AppExercisesIdRouteImport } from './routes/_app/exercises/$id'
 import { Route as AppTemplatesIndexRouteImport } from './routes/_app/templates/index'
 import { Route as AppTemplatesIdRouteImport } from './routes/_app/templates/$id'
 import { Route as AppTemplatesNewRouteImport } from './routes/_app/templates/new'
+import { Route as WorkoutSessionIdIndexRouteImport } from './routes/workout/$sessionId/index'
 import { Route as WorkoutSessionIdEditRouteImport } from './routes/workout/$sessionId/edit'
 
 const AppRoute = AppRouteImport.update({
@@ -52,6 +54,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppFeedRoute = AppFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -94,6 +101,11 @@ const AppTemplatesNewRoute = AppTemplatesNewRouteImport.update({
   path: '/templates/new',
   getParentRoute: () => AppRoute,
 } as any)
+const WorkoutSessionIdIndexRoute = WorkoutSessionIdIndexRouteImport.update({
+  id: '/workout/$sessionId/',
+  path: '/workout/$sessionId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkoutSessionIdEditRoute = WorkoutSessionIdEditRouteImport.update({
   id: '/workout/$sessionId/edit',
   path: '/workout/$sessionId/edit',
@@ -106,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/feed': typeof AppFeedRoute
+  '/history': typeof AppHistoryRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
@@ -115,12 +128,14 @@ export interface FileRoutesByFullPath {
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/exercises/': typeof AppExercisesIndexRoute
   '/templates/': typeof AppTemplatesIndexRoute
+  '/workout/$sessionId/': typeof WorkoutSessionIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/feed': typeof AppFeedRoute
+  '/history': typeof AppHistoryRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
@@ -131,6 +146,7 @@ export interface FileRoutesByTo {
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/exercises': typeof AppExercisesIndexRoute
   '/templates': typeof AppTemplatesIndexRoute
+  '/workout/$sessionId': typeof WorkoutSessionIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -139,6 +155,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/_app/feed': typeof AppFeedRoute
+  '/_app/history': typeof AppHistoryRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
@@ -149,6 +166,7 @@ export interface FileRoutesById {
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/_app/exercises/': typeof AppExercisesIndexRoute
   '/_app/templates/': typeof AppTemplatesIndexRoute
+  '/workout/$sessionId/': typeof WorkoutSessionIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +176,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/feed'
+    | '/history'
     | '/profile'
     | '/progress'
     | '/workout/active'
@@ -167,12 +186,14 @@ export interface FileRouteTypes {
     | '/workout/$sessionId/edit'
     | '/exercises/'
     | '/templates/'
+    | '/workout/$sessionId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/onboarding'
     | '/signup'
     | '/feed'
+    | '/history'
     | '/profile'
     | '/progress'
     | '/workout/active'
@@ -183,6 +204,7 @@ export interface FileRouteTypes {
     | '/workout/$sessionId/edit'
     | '/exercises'
     | '/templates'
+    | '/workout/$sessionId'
   id:
     | '__root__'
     | '/_app'
@@ -190,6 +212,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/_app/feed'
+    | '/_app/history'
     | '/_app/profile'
     | '/_app/progress'
     | '/workout/active'
@@ -200,6 +223,7 @@ export interface FileRouteTypes {
     | '/workout/$sessionId/edit'
     | '/_app/exercises/'
     | '/_app/templates/'
+    | '/workout/$sessionId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,6 +233,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   WorkoutActiveRoute: typeof WorkoutActiveRoute
   WorkoutSessionIdEditRoute: typeof WorkoutSessionIdEditRoute
+  WorkoutSessionIdIndexRoute: typeof WorkoutSessionIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -253,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/feed'
       fullPath: '/feed'
       preLoaderRoute: typeof AppFeedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/history': {
+      id: '/_app/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/profile': {
@@ -311,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTemplatesNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/workout/$sessionId/': {
+      id: '/workout/$sessionId/'
+      path: '/workout/$sessionId'
+      fullPath: '/workout/$sessionId/'
+      preLoaderRoute: typeof WorkoutSessionIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workout/$sessionId/edit': {
       id: '/workout/$sessionId/edit'
       path: '/workout/$sessionId/edit'
@@ -323,6 +362,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppFeedRoute: typeof AppFeedRoute
+  AppHistoryRoute: typeof AppHistoryRoute
   AppProfileRoute: typeof AppProfileRoute
   AppProgressRoute: typeof AppProgressRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -335,6 +375,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFeedRoute: AppFeedRoute,
+  AppHistoryRoute: AppHistoryRoute,
   AppProfileRoute: AppProfileRoute,
   AppProgressRoute: AppProgressRoute,
   AppIndexRoute: AppIndexRoute,
@@ -354,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   WorkoutActiveRoute: WorkoutActiveRoute,
   WorkoutSessionIdEditRoute: WorkoutSessionIdEditRoute,
+  WorkoutSessionIdIndexRoute: WorkoutSessionIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

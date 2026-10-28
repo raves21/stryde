@@ -154,3 +154,23 @@ export function formatElapsed(ms: number): string {
   const mm = h > 0 ? String(m).padStart(2, '0') : String(m)
   return `${h > 0 ? `${h}:` : ''}${mm}:${String(sec).padStart(2, '0')}`
 }
+
+/** Session-detail line: "80 kg × 8 @1", "+10 kg × 6", "× 12", "1:30", "20 kg · 1:30". */
+export function formatSetLine(
+  set: Pick<SetRow, 'weightKg' | 'reps' | 'rir' | 'durationSec' | 'targetKind'>,
+  type: ExerciseType,
+  unit: WeightUnit,
+): string {
+  const w =
+    set.weightKg === null || set.weightKg === 0
+      ? null
+      : `${toDisplayWeight(set.weightKg, unit)} ${unit}`
+  if (type === 'timed') {
+    const time = set.durationSec === null ? '' : formatDuration(set.durationSec)
+    return [w, time].filter(Boolean).join(' · ')
+  }
+  const weight = w ? (type === 'bodyweight' ? `+${w}` : w) : ''
+  const reps = set.reps === null ? '' : `× ${set.reps}`
+  const rir = set.targetKind === 'rir' && set.rir !== null ? ` @${set.rir}` : ''
+  return `${[weight, reps].filter(Boolean).join(' ')}${rir}`
+}
