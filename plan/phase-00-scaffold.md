@@ -44,6 +44,6 @@ docker/compose.dev.yml  docker/.env.example
 ```
 
 ## Acceptance criteria
-- [ ] `bun run dev` shows a dark page using `--bg`, Barlow Condensed heading, and a shadcn `Button` styled with the blue accent.
+- [ ] `bun run dev` shows a dark page using `--bg`, Barlow Condensed heading, and a shadcn `Button` styled with the volt accent.
 - [ ] `/api/health` reachable through the Vite proxy.
 - [ ] `bun run typecheck && bun run lint && bun run test` pass.

@@ -18,11 +18,13 @@
   --text: #f4f4f5;
   --text-muted: #a1a1aa;
   --text-faint: #63636e;
-  --accent-blue: #4d9fff;
-  --accent-dim: rgb(77 159 255 / 0.12);
+  /* Volt. */
+  --accent-brand: #d4ff3a;
+  --accent-dim: rgb(212 255 58 / 0.12);
   --on-accent: #0a0a0b;
   --pr: #ffb224;
   --failure: #ff5a4e;
+  --rir: #5ab2ff;
   --warmup: #8b8b96;
   --success: #3ddc97;
   --warning: #f5a524;
@@ -34,7 +36,7 @@
   --card-foreground: var(--text);
   --popover: var(--surface-2);
   --popover-foreground: var(--text);
-  --primary: var(--accent-blue);
+  --primary: var(--accent-brand);
   --primary-foreground: var(--on-accent);
   --secondary: var(--surface-2);
   --secondary-foreground: var(--text);
@@ -46,10 +48,10 @@
   --destructive: var(--failure);
   --border: var(--border-color);
   --input: var(--border-color);
-  --ring: var(--accent-blue);
+  --ring: var(--accent-brand);
   --radius: 10px;
 
-  --chart-1: var(--accent-blue);
+  --chart-1: var(--accent-brand);
   --chart-2: var(--pr);
   --chart-3: var(--text-muted);
   --chart-4: var(--surface-3);
@@ -57,12 +59,12 @@
 
   --sidebar: var(--surface);
   --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--accent-blue);
+  --sidebar-primary: var(--accent-brand);
   --sidebar-primary-foreground: var(--on-accent);
   --sidebar-accent: var(--surface-3);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--border-color);
-  --sidebar-ring: var(--accent-blue);
+  --sidebar-ring: var(--accent-brand);
 }
 
 @theme inline {
@@ -75,10 +77,11 @@
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
   --color-faint: var(--text-faint);
-  --color-brand: var(--accent-blue);
+  --color-brand: var(--accent-brand);
   --color-brand-dim: var(--accent-dim);
   --color-pr: var(--pr);
   --color-failure: var(--failure);
+  --color-rir: var(--rir);
   --color-warmup: var(--warmup);
   --color-success: var(--success);
   --color-warning: var(--warning);

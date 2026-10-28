@@ -15,10 +15,10 @@
 **Design goals, in priority order**
 1. **Fast, thumb-reachable logging.** Primary actions in the bottom half of the screen. Big targets.
 2. **Numbers are the hero.** Weights, reps, times, PRs: large, bold, tabular figures.
-3. **Calm, dark, minimal.** Low glare in a dim gym, OLED-friendly. Mostly neutral surfaces and text; one blue accent used sparingly so it *means something* (primary action, completed, trained). Remove anything that doesn't help the user log or read their training.
+3. **Calm and dark.** Low glare in a dim gym, OLED-friendly, one sharp accent color used sparingly so it *means something* (primary action, completed, PR).
 4. **Trustworthy offline.** The user should never wonder whether their data is saved.
 
-**Personality:** focused and quiet: think a well-made stopwatch, not a wellness app or a gym poster. Generous spacing, few colors, few borders. No stock photos, no gradients, no illustrations. Clear type and the numbers themselves do the work.
+**Personality:** focused, athletic, a little raw: think gym signage and a stopwatch, not a wellness app. No stock photos, no gradients-on-everything, no cartoon illustrations. Confident type and crisp geometry do the work.
 
 ---
 
@@ -37,28 +37,29 @@ Define as CSS variables on `:root` and map to shadcn tokens.
 | `--text` | `#F4F4F5` | primary text |
 | `--text-muted` | `#A1A1AA` | secondary text, labels |
 | `--text-faint` | `#63636E` | placeholders, "previous" hints |
-| `--accent` | `#4D9FFF` | **blue**: primary buttons, completed sets, active tab, calendar "trained" squares. Text on accent is `#0A0A0B` (≈7:1). |
-| `--accent-dim` | `rgba(77,159,255,0.12)` | completed set row background, subtle highlights |
+| `--accent` | `#D4FF3A` | **volt**: primary buttons, completed sets, active tab, calendar "trained" squares. Text on accent is `#0A0A0B`. |
+| `--accent-dim` | `rgba(212,255,58,0.12)` | completed set row background, subtle highlights |
 | `--pr` | `#FFB224` | gold: PR badges, trophies, PR celebration |
 | `--failure` | `#FF5A4E` | "to failure" set badge, destructive actions |
+| `--rir` | `#5AB2FF` | RIR badge / RIR inputs |
 | `--warmup` | `#8B8B96` | warm-up set badge |
 | `--success` | `#3DDC97` | "synced" state |
 | `--warning` | `#F5A524` | "offline / pending" state |
 
-Rules: accent appears at most a few times per screen; most screens should read as greyscale plus one or two blue elements. Never put accent text on dark surfaces for body copy (only for small labels/icons). Semantic colors (`--pr`, `--failure`, `--warning`, `--success`) only where they carry meaning, never as decoration. RIR badges use neutral styling (`--text` on `--surface-3`) so they don't compete with the blue accent. All text ≥ 4.5:1 contrast.
+Rules: accent appears at most a few times per screen. Never put accent text on dark surfaces for body copy (only for small labels/icons). All text ≥ 4.5:1 contrast.
 
 ### Typography (self-hosted via `@fontsource`, no CDN; the app must work offline)
-- **Display / numbers:** **Barlow Condensed** (600/700), used only for screen titles and big numbers (timer, weights, reps in summaries, chart headline values). Condensed digits fit narrow columns.
+- **Display / numbers:** **Barlow Condensed** (600/700), used for screen titles, big numbers (timer, weights, reps in summaries, chart headline values), and uppercase section labels. Condensed = gym-signage feel and fits numbers in narrow columns.
 - **UI / body:** **Inter** (400/500/600) with `font-feature-settings: "tnum"` on any numeric UI (set inputs, tables) so digits don't jitter.
 - Scale (px): 12 label · 14 body-sm · 16 body · 20 title-sm · 28 title · 40 display · 64 hero-number (workout timer on finish screen).
-- Section labels: Inter 500, 13px, sentence case, `--text-muted`.
+- Section labels: Barlow Condensed 600, 13px, uppercase, letter-spacing 0.08em, `--text-muted`.
 
 ### Shape, spacing, motion
 - Radius: 10px inputs/rows, 16px cards, 24px bottom sheets (top corners), full-round for chips/avatars.
 - Spacing: 4px grid; screen side padding 16px; card padding 16px.
 - Touch targets **≥ 48×48px**; set-row inputs **≥ 52px tall**.
 - Motion: fast and purposeful (150–220 ms, ease-out). Respect `prefers-reduced-motion`. Reserve the one "celebration" animation for PRs.
-- Elevation: no drop shadows on dark; separate with surface steps and spacing. Use 1px borders only on inputs and list dividers, not around every card.
+- Elevation: no drop shadows on dark; use surface steps + 1px borders.
 
 ### Iconography
 lucide-react, 20–24px, 1.75 stroke. Custom glyph-like badges for set types (see §5).
@@ -68,7 +69,7 @@ lucide-react, 20–24px, 1.75 stroke. Custom glyph-like badges for set types (se
 ## 3. App shell & navigation
 
 - **Bottom tab bar** (fixed, safe-area aware, 64px + inset): `Today` (house) · `Feed` (users) · **center Start button** · `Progress` (chart) · `Profile` (user circle).
-  - Center button: round accent button, 56px, `+` icon. If a workout is active it becomes a "resume" button showing elapsed time (no pulsing).
+  - Center button: round volt button, 56px, `+`/dumbbell icon. If a workout is active it becomes a pulsing "resume" button showing elapsed time.
 - **Active workout mini-bar:** when a workout is active and the user is on any other screen, a slim bar sits above the tab bar: workout name · elapsed time · rest countdown if running · tap to return.
 - **Top bar:** screen title (Barlow Condensed 28) left; right side: sync indicator + notifications bell (v2, with unread dot).
 - **Sheets over pages:** quick actions (start workout, set options, reactions, finish summary) are **bottom sheets** (shadcn `Drawer`/vaul), not modals.
@@ -114,8 +115,8 @@ lucide-react, 20–24px, 1.75 stroke. Custom glyph-like badges for set types (se
 For each: purpose → layout → key components → states. Use realistic sample data in mocks (see §8).
 
 ### 5.1 Login / Signup
-- Full-bleed `--bg`, app wordmark **"STRYDE"** in Barlow Condensed (large, uppercase, tight tracking). No decorative marks.
-- Fields: "Email or username", "Password". Primary button "Sign in". Divider "or". Secondary button "Continue with Google" (white G logo on `--surface-2`). Link to switch sign in ↔ sign up.
+- Full-bleed `--bg`, app wordmark **"STRYDE"** in Barlow Condensed (large, uppercase, tight tracking) with a single volt accent mark (e.g., a short volt bar under the wordmark).
+- Fields: "Email or username", "Password". Primary volt button "Sign in". Divider "or". Secondary button "Continue with Google" (white G logo on `--surface-2`). Link to switch sign in ↔ sign up.
 - Signup: display name, username (live availability check, inline ✓/✗), email, password.
 - Note under form (muted, small): "Forgot password? Sign in with Google or contact the admin." (no email reset in v1).
 - Offline state: banner "You're offline, so signing in needs a connection."
@@ -129,7 +130,7 @@ For each: purpose → layout → key components → states. Use realistic sample
 ### 5.3 Today (home)
 Top to bottom:
 - Greeting line (muted) + date.
-- **Week strip:** 7 day circles Mon–Sun; trained days filled accent with a check, today outlined. Caption: "3 workouts this week".
+- **Week strip:** 7 day circles Mon–Sun; trained days filled volt with a check, today outlined. Caption: "3 workouts this week".
 - **Start card:** big primary "Start empty workout" + horizontal scroll of **template chips/cards** (name, exercise count, "last done 4d ago"). Tap template → start sheet with preview + "Start".
 - If active workout exists → this card becomes **"Resume Push Day · 32:14"**.
 - **Recent workouts** (last 3): compact cards (name, date, duration, sets, PR badge) → session detail. "See all" → History.
@@ -138,7 +139,7 @@ Top to bottom:
 ### 5.4 Active workout (**the most important screen; design this with the most care**)
 Full screen, tab bar hidden, mini-bar not shown.
 
-**Header (sticky):** back-chevron (minimizes, doesn't end) · editable workout name · **elapsed timer** (Barlow Condensed, tabular) · **Finish** button (accent, small). Below the header, a thin progress line showing completed sets / total.
+**Header (sticky):** back-chevron (minimizes, doesn't end) · editable workout name · **elapsed timer** (Barlow Condensed, tabular) · **Finish** button (volt, small). Below the header, a thin progress line showing completed sets / total.
 
 **Body:** vertical list of **exercise cards**:
 ```
@@ -153,13 +154,13 @@ Full screen, tab bar hidden, mini-bar not shown.
 │ + Add set                                     │
 └──────────────────────────────────────────────┘
 ```
-- **Set number cell** = badge that also shows type: `W` (grey) warm-up, number for working sets; the **target** shown as a tiny tag under/next to it: `8–12`, `@2` (RIR, neutral), `F` (failure, red). Tap → set options sheet: set type, target kind, target reps/range/RIR, delete set.
+- **Set number cell** = badge that also shows type: `W` (grey) warm-up, number for working sets; the **target** shown as a tiny tag under/next to it: `8–12`, `@2` (RIR, blue), `F` (failure, red). Tap → set options sheet: set type, target kind, target reps/range/RIR, delete set.
 - **Previous** column: `--text-faint`, e.g. `80×8 @1` or `80×7 F`. Tapping it copies values into the row.
 - **Inputs:** large (52px), centered, tabular. `inputmode="decimal"` for weight, `"numeric"` for reps/RIR. On focus, select-all. For RIR/failure sets, reps is **empty with the previous value as placeholder**, and the ✓ is disabled (outlined) until reps is entered. Fixed sets come pre-filled.
-- **Complete ✓:** 48px square. Tapping: row background → `--accent-dim`, ✓ fills accent, subtle haptic (Android), row inputs remain editable. Then **rest timer starts**.
+- **Complete ✓:** 48px square. Tapping: row background → `--accent-dim`, ✓ fills volt, subtle haptic (Android), row inputs remain editable. Then **rest timer starts**.
 - **PR in-line hint:** if a just-completed set is a PR, show a small gold 🏆 chip on the row ("e1RM PR").
 - Swipe row left → delete. Long-press card header (or ⋯ menu) → reorder, add to superset, change rest, remove exercise, replace exercise.
-- **Supersets:** cards in the same group are visually joined: a 2px `--surface-3` vertical rail on the left connecting them, labels `A1`, `A2`; one shared rest timer after the last exercise of the round.
+- **Supersets:** cards in the same group are visually joined: a 3px volt-tinted vertical rail on the left connecting them, labels `A1`, `A2`; one shared rest timer after the last exercise of the round.
 - **Timed exercise rows:** columns `KG (optional)` and `TIME` (mm:ss input).
 - **Bodyweight rows:** column header `+KG` (added weight, optional) instead of `KG`.
 
@@ -168,14 +169,14 @@ Full screen, tab bar hidden, mini-bar not shown.
 - Workout notes field (collapsed "Add note").
 - "Discard workout" (destructive text button, confirmation dialog).
 
-**Rest timer bar** (overlays bottom when running): big countdown `1:42` (Barlow 40), thin progress bar, `−15` · `+15` · `Skip`. At 0: bar turns accent, vibrates, then auto-dismisses after 3 s. Next set to do is subtly highlighted.
+**Rest timer bar** (overlays bottom when running): big countdown `1:42` (Barlow 40), thin progress bar, `−15` · `+15` · `Skip`. At 0: bar flashes volt, vibrates, then auto-dismisses after 3 s. Next set to do is subtly highlighted.
 
 **Unit display:** column header and placeholders follow the user's unit (KG/LB).
 
 ### 5.5 Finish workout (bottom sheet, full height)
 - Hero: **duration** in hero size (`1:12:48`), workout name, date.
 - Stat row (3 tiles): Sets · Volume (kg) · Exercises.
-- **PRs section** (if any): gold cards: "🏆 Bench Press · e1RM 101.3 kg (+2.5)". This is the one place for a **celebration**: a brief, subtle gold shimmer across the PR cards, once, reduced-motion aware. No confetti.
+- **PRs section** (if any): gold cards: "🏆 Bench Press · e1RM 101.3 kg (+2.5)". This is the one place for a **celebration**: short confetti/sparkle burst in gold + volt, once, reduced-motion aware.
 - Incomplete sets warning (if any): "3 sets not completed will be discarded" with "Go back".
 - Notes textarea.
 - **"Share with friends"** switch with helper text: "Friends will be notified and can see this workout." (v2; in v1 still show the toggle since it's stored.)
@@ -195,16 +196,16 @@ Reverse-chronological list grouped by month (sticky month headers). Each item: d
 - Library: search field (sticky), muscle group chips (horizontal scroll), list rows: name, equipment · muscle, small "custom" tag for user exercises. FAB/top "+" → create custom (name, type segmented: Weighted / Bodyweight / Timed, muscle, equipment, default rest).
 - **Detail:**
   - Header: name, muscle · equipment.
-  - **Headline metric**: current e1RM (big Barlow number) + delta vs 3 months ago (`--text` ▲ / muted ▼).
-  - **Chart card:** metric switcher (segmented: `e1RM` · `Best set` · `Volume` for weighted; `Max reps` · `Total reps` for bodyweight; `Duration` for timed) + range chips `1M 3M 6M 1Y All`. Line chart: accent line, 2px, dots on data points, PR points rendered as **gold dots**. Minimal gridlines (`--border`), muted axis labels, tooltip card showing date + best set.
+  - **Headline metric**: current e1RM (big Barlow number) + delta vs 3 months ago (green ▲ / muted ▼).
+  - **Chart card:** metric switcher (segmented: `e1RM` · `Best set` · `Volume` for weighted; `Max reps` · `Total reps` for bodyweight; `Duration` for timed) + range chips `1M 3M 6M 1Y All`. Line chart: volt line, 2px, dots on data points, PR points rendered as **gold dots**. Minimal gridlines (`--border`), muted axis labels, tooltip card showing date + best set.
   - **Personal records** list: rows with PR type, value, date (gold trophy icon).
   - **History**: per-session set lists.
 
 ### 5.10 Progress tab
 - Stat tiles (2×2): This week · This month · This year · Total workouts.
 - **Calendar card** with toggle `Year` / `Month`:
-  - **Year:** GitHub-style grid, 53 columns × 7 rows of ~11px squares with 3px gap, horizontally scrollable, auto-scrolled to current week. **Binary**: trained = solid accent square, not trained = `--surface-3`. No intensity levels. Month labels above, M/W/F labels left. Tap square → tooltip/sheet with that day's workouts.
-  - **Month:** standard calendar grid; trained days show an accent filled circle with a dark check; today outlined; tap day → list of that day's sessions in a sheet. Prev/next month arrows.
+  - **Year:** GitHub-style grid, 53 columns × 7 rows of ~11px squares with 3px gap, horizontally scrollable, auto-scrolled to current week. **Binary**: trained = solid volt square, not trained = `--surface-3`. No intensity levels. Month labels above, M/W/F labels left. Tap square → tooltip/sheet with that day's workouts.
+  - **Month:** standard calendar grid; trained days show a volt filled circle with a dark check; today outlined; tap day → list of that day's sessions in a sheet. Prev/next month arrows.
 - **Recent PRs** list (gold), "See all".
 - Lifetime volume, total sets.
 
@@ -224,7 +225,7 @@ Reverse-chronological list grouped by month (sticky month headers). Each item: d
 - Offline: the feed is **not** cached. Show a simple offline state (cloud-off icon + "You're offline. The feed will load when you're back online."). No retry button needed; it reloads automatically when the connection returns.
 
 ### 5.12 Friends (v2)
-Tabs: `Friends` · `Requests (n)`. Search bar "Add by username" with result row + "Add" button. Friend row: avatar, name, @username, last workout ("trained yesterday"), ⋯ menu (Mute notifications / Remove friend). Request rows with Accept (accent) / Decline.
+Tabs: `Friends` · `Requests (n)`. Search bar "Add by username" with result row + "Add" button. Friend row: avatar, name, @username, last workout ("trained yesterday"), ⋯ menu (Mute notifications / Remove friend). Request rows with Accept (volt) / Decline.
 
 ### 5.13 Notifications (v2)
 List of items (icon by type, text, time ago, unread dot). Tap → relevant screen. "Mark all read".
@@ -246,7 +247,7 @@ All primitives come from **shadcn/ui** (installed with the shadcn CLI into `src/
 
 | shadcn component | Used for |
 |---|---|
-| `Button` | all buttons; variants: `default` = accent primary, `secondary` = `--surface-2`, `ghost`, `destructive` = `--failure`, `outline` |
+| `Button` | all buttons; variants: `default` = volt primary, `secondary` = `--surface-2`, `ghost`, `destructive` = `--failure`, `outline` |
 | `Input`, `Textarea`, `Label` | forms; `NumberInput` wraps `Input` |
 | `Drawer` (vaul) | **all bottom sheets**: start workout, set options, exercise picker, finish workout, day details, who reacted |
 | `Dialog`, `AlertDialog` | confirmations (discard workout, delete, sign out with pending changes), active-session conflict |
@@ -296,7 +297,6 @@ Contrast ≥ 4.5:1 for text; touch targets ≥ 48px; every icon-only button has 
 ## 10. Don'ts
 - No light mode, no theme toggle.
 - No gradients, glassmorphism, or drop shadows as decoration.
-- No decorative accent marks (bars, underlines, glows) or pulsing elements.
 - No stock photos, mascots, or illustrations.
 - Don't use the accent for more than primary action + completed + trained + active tab.
 - Don't hide the Finish button or rest-timer controls behind menus.
