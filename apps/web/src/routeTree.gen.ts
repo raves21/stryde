@@ -17,11 +17,13 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppFeedRouteImport } from './routes/_app/feed'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppProgressRouteImport } from './routes/_app/progress'
+import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
 import { Route as AppExercisesIndexRouteImport } from './routes/_app/exercises/index'
 import { Route as AppExercisesIdRouteImport } from './routes/_app/exercises/$id'
 import { Route as AppTemplatesIndexRouteImport } from './routes/_app/templates/index'
 import { Route as AppTemplatesIdRouteImport } from './routes/_app/templates/$id'
 import { Route as AppTemplatesNewRouteImport } from './routes/_app/templates/new'
+import { Route as WorkoutSessionIdEditRouteImport } from './routes/workout/$sessionId/edit'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -62,6 +64,11 @@ const AppProgressRoute = AppProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AppRoute,
 } as any)
+const WorkoutActiveRoute = WorkoutActiveRouteImport.update({
+  id: '/workout/active',
+  path: '/workout/active',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppExercisesIndexRoute = AppExercisesIndexRouteImport.update({
   id: '/exercises/',
   path: '/exercises/',
@@ -87,6 +94,11 @@ const AppTemplatesNewRoute = AppTemplatesNewRouteImport.update({
   path: '/templates/new',
   getParentRoute: () => AppRoute,
 } as any)
+const WorkoutSessionIdEditRoute = WorkoutSessionIdEditRouteImport.update({
+  id: '/workout/$sessionId/edit',
+  path: '/workout/$sessionId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -96,9 +108,11 @@ export interface FileRoutesByFullPath {
   '/feed': typeof AppFeedRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
+  '/workout/active': typeof WorkoutActiveRoute
   '/exercises/$id': typeof AppExercisesIdRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
+  '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/exercises/': typeof AppExercisesIndexRoute
   '/templates/': typeof AppTemplatesIndexRoute
 }
@@ -109,10 +123,12 @@ export interface FileRoutesByTo {
   '/feed': typeof AppFeedRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
+  '/workout/active': typeof WorkoutActiveRoute
   '/': typeof AppIndexRoute
   '/exercises/$id': typeof AppExercisesIdRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
+  '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/exercises': typeof AppExercisesIndexRoute
   '/templates': typeof AppTemplatesIndexRoute
 }
@@ -125,10 +141,12 @@ export interface FileRoutesById {
   '/_app/feed': typeof AppFeedRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/progress': typeof AppProgressRoute
+  '/workout/active': typeof WorkoutActiveRoute
   '/_app/': typeof AppIndexRoute
   '/_app/exercises/$id': typeof AppExercisesIdRoute
   '/_app/templates/$id': typeof AppTemplatesIdRoute
   '/_app/templates/new': typeof AppTemplatesNewRoute
+  '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
   '/_app/exercises/': typeof AppExercisesIndexRoute
   '/_app/templates/': typeof AppTemplatesIndexRoute
 }
@@ -142,9 +160,11 @@ export interface FileRouteTypes {
     | '/feed'
     | '/profile'
     | '/progress'
+    | '/workout/active'
     | '/exercises/$id'
     | '/templates/$id'
     | '/templates/new'
+    | '/workout/$sessionId/edit'
     | '/exercises/'
     | '/templates/'
   fileRoutesByTo: FileRoutesByTo
@@ -155,10 +175,12 @@ export interface FileRouteTypes {
     | '/feed'
     | '/profile'
     | '/progress'
+    | '/workout/active'
     | '/'
     | '/exercises/$id'
     | '/templates/$id'
     | '/templates/new'
+    | '/workout/$sessionId/edit'
     | '/exercises'
     | '/templates'
   id:
@@ -170,10 +192,12 @@ export interface FileRouteTypes {
     | '/_app/feed'
     | '/_app/profile'
     | '/_app/progress'
+    | '/workout/active'
     | '/_app/'
     | '/_app/exercises/$id'
     | '/_app/templates/$id'
     | '/_app/templates/new'
+    | '/workout/$sessionId/edit'
     | '/_app/exercises/'
     | '/_app/templates/'
   fileRoutesById: FileRoutesById
@@ -183,6 +207,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  WorkoutActiveRoute: typeof WorkoutActiveRoute
+  WorkoutSessionIdEditRoute: typeof WorkoutSessionIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +269,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProgressRouteImport
       parentRoute: typeof AppRoute
     }
+    '/workout/active': {
+      id: '/workout/active'
+      path: '/workout/active'
+      fullPath: '/workout/active'
+      preLoaderRoute: typeof WorkoutActiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/exercises/': {
       id: '/_app/exercises/'
       path: '/exercises'
@@ -278,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTemplatesNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/workout/$sessionId/edit': {
+      id: '/workout/$sessionId/edit'
+      path: '/workout/$sessionId/edit'
+      fullPath: '/workout/$sessionId/edit'
+      preLoaderRoute: typeof WorkoutSessionIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -312,6 +352,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  WorkoutActiveRoute: WorkoutActiveRoute,
+  WorkoutSessionIdEditRoute: WorkoutSessionIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

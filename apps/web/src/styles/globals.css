@@ -150,3 +150,24 @@
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
+
+/* The one celebration (UI_DESIGN.md §5.5): a short gold + volt burst on new PRs. */
+@keyframes pr-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--burst-x), var(--burst-y)) scale(0.4);
+  }
+}
+@keyframes rest-done {
+  0%,
+  100% {
+    background-color: var(--surface);
+  }
+  50% {
+    background-color: var(--accent-dim);
+  }
+}

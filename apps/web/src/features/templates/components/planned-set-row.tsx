@@ -6,9 +6,9 @@ import {
   type WeightUnit,
 } from '@stryde/shared'
 import { NumberInput } from '@/components/app/number-input'
+import { RepsTargetInput } from '@/components/sets/reps-target-input'
+import { SetBadge } from '@/components/sets/set-badge'
 import type { RowPatch } from '@/db/repositories/core'
-import { RepsTargetInput } from './reps-target-input'
-import { SetBadge } from './set-badge'
 
 /** One planned set: badge (tap → options) · target · planned weight. */
 export function PlannedSetRow({

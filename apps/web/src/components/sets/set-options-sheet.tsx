@@ -1,22 +1,19 @@
-import type { SetType, TargetKind, TemplateSetRow } from '@stryde/shared'
+import type { SetRow, SetType, TargetKind } from '@stryde/shared'
 import { Trash2 } from 'lucide-react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
 import { NumberInput } from '@/components/app/number-input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import type { RowPatch } from '@/db/repositories/core'
 import { RepsTargetInput } from './reps-target-input'
 
 const KIND_LABELS: Record<TargetKind, string> = { fixed: 'Reps', rir: 'RIR', failure: 'Failure' }
 
-/** Patch for switching target kind: RIR sets need a target RIR, the others none. */
-export function targetKindPatch(set: TemplateSetRow, kind: TargetKind): RowPatch<'templateSets'> {
-  return {
-    targetKind: kind,
-    targetRir: kind === 'rir' ? (set.targetRir ?? 2) : null,
-  }
-}
+/** The target fields shared by planned (template) and logged (session) sets. */
+export type SetTargets = Pick<
+  SetRow,
+  'setType' | 'targetKind' | 'targetReps' | 'targetRepsMax' | 'targetRir'
+>
 
 /** Set type, target kind, target reps/range and RIR, delete (UI_DESIGN.md §5.4, §5.8). */
 export function SetOptionsSheet({
@@ -24,12 +21,15 @@ export function SetOptionsSheet({
   timed,
   onOpenChange,
   onChange,
+  onKindChange,
   onDelete,
 }: {
-  set: TemplateSetRow | null
+  set: SetTargets | null
   timed: boolean
   onOpenChange: (open: boolean) => void
-  onChange: (patch: RowPatch<'templateSets'>) => void
+  onChange: (patch: Partial<Omit<SetTargets, 'targetKind'>>) => void
+  /** Kind changes also touch other fields (e.g. a session set's actual RIR). */
+  onKindChange: (kind: TargetKind) => void
   onDelete: () => void
 }) {
   return (
@@ -67,7 +67,7 @@ export function SetOptionsSheet({
                 <ToggleGroup
                   type="single"
                   value={set.targetKind}
-                  onValueChange={(v) => v && onChange(targetKindPatch(set, v as TargetKind))}
+                  onValueChange={(v) => v && onKindChange(v as TargetKind)}
                   className="grid w-full grid-cols-3"
                   spacing={2}
                   aria-label="Target kind"

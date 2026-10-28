@@ -14,13 +14,14 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import type { ExerciseRow, TemplateSetRow } from '@stryde/shared'
+import type { ExerciseRow } from '@stryde/shared'
 import { useNavigate } from '@tanstack/react-router'
 import { Check, Copy, Ellipsis, Link2, Link2Off, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { Screen } from '@/components/app/screen'
 import { TopBar } from '@/components/app/top-bar'
+import { SetOptionsSheet } from '@/components/sets/set-options-sheet'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,10 +32,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { NewRow, RowPatch } from '@/db/repositories/core'
+import type { RowPatch } from '@/db/repositories/core'
 import {
+  addNextTemplateSet,
   addTemplateExercise,
-  addTemplateSet,
   deleteTemplate,
   duplicateTemplate,
   groupSuperset,
@@ -50,7 +51,6 @@ import {
 import { ExercisePicker } from '@/features/exercises/components/exercise-picker'
 import { useUnit } from '@/features/settings/use-settings'
 import { useSaveState } from '../use-save-state'
-import { SetOptionsSheet } from './set-options-sheet'
 import { TemplateExerciseCard } from './template-exercise-card'
 
 /** "A1", "A2"… for exercises in a superset, by order within the group. */
@@ -66,28 +66,12 @@ function supersetLabels(tree: TemplateTree): Map<string, string> {
   return labels
 }
 
-/** A new set copies the last one; the first set of an exercise is a plain working set. */
-function nextSet(templateExerciseId: string, sets: TemplateSetRow[]): NewRow<'templateSets'> {
-  const last = sets.at(-1)
-  return {
-    templateExerciseId,
-    position: (last?.position ?? -1) + 1,
-    setType: last?.setType === 'warmup' ? 'working' : (last?.setType ?? 'working'),
-    targetKind: last?.targetKind ?? 'fixed',
-    targetReps: last?.targetReps ?? null,
-    targetRepsMax: last?.targetRepsMax ?? null,
-    targetRir: last?.targetRir ?? null,
-    plannedWeightKg: last?.plannedWeightKg ?? null,
-    plannedDurationSec: last?.plannedDurationSec ?? null,
-  }
-}
-
 /** Template editor with autosave (UI_DESIGN.md §5.8, PRODUCT_SPEC.md §4.2). */
 export function TemplateEditor({ tree }: { tree: TemplateTree }) {
   const { template } = tree
   const navigate = useNavigate()
   const unit = useUnit()
-  const { state, save, saveLater } = useSaveState()
+  const { state, save, saveLater, flush } = useSaveState()
   const [name, setName] = useState(template.name)
   const [notes, setNotes] = useState(template.notes ?? '')
   const [picking, setPicking] = useState(false)
@@ -140,7 +124,7 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
         exerciseId: exercise.id,
         position: tree.exercises.length,
       })
-      await addTemplateSet(nextSet(te.id, []))
+      await addNextTemplateSet(te.id)
     })
   }
 
@@ -262,7 +246,13 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
                 onRestChange={(restSeconds) =>
                   void save(() => updateTemplateExercise(item.row.id, { restSeconds }))
                 }
-                onAddSet={() => void save(() => addTemplateSet(nextSet(item.row.id, item.sets)))}
+                onAddSet={() =>
+                  void save(async () => {
+                    // Typed values may still be waiting on the debounce.
+                    await flush()
+                    await addNextTemplateSet(item.row.id)
+                  })
+                }
                 onSetChange={(setId, patch) => void save(() => updateTemplateSet(setId, patch))}
                 onSetChangeLater={(setId, patch: RowPatch<'templateSets'>) =>
                   saveLater(`set:${setId}:${Object.keys(patch).join(',')}`, () =>
@@ -314,6 +304,16 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
         timed={optionsTimed}
         onOpenChange={(open) => !open && setOptionsFor(null)}
         onChange={(patch) => optionsSet && void save(() => updateTemplateSet(optionsSet.id, patch))}
+        onKindChange={(targetKind) =>
+          optionsSet &&
+          void save(() =>
+            updateTemplateSet(optionsSet.id, {
+              targetKind,
+              // RIR sets need a target RIR; the others have none.
+              targetRir: targetKind === 'rir' ? (optionsSet.targetRir ?? 2) : null,
+            }),
+          )
+        }
         onDelete={() => {
           if (optionsSet) void save(() => removeTemplateSet(optionsSet.id))
           setOptionsFor(null)

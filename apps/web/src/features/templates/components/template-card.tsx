@@ -16,12 +16,16 @@ import {
   duplicateTemplate,
   type TemplateSummary,
 } from '@/db/repositories/templates'
+import { useStartWorkout } from '@/features/workout/use-start-workout'
+import { useActiveSession } from '@/features/workout/use-workout'
 import { exercisePreview } from '../use-templates'
 
 /** Templates list card: name, exercise preview, Start, ⋯ (UI_DESIGN.md §5.8). */
 export function TemplateCard({ template }: { template: TemplateSummary }) {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const active = useActiveSession()
+  const { startTemplate } = useStartWorkout()
 
   return (
     <article className="flex items-center gap-2 rounded-2xl border border-border bg-surface p-4">
@@ -35,12 +39,12 @@ export function TemplateCard({ template }: { template: TemplateSummary }) {
           {exercisePreview(template.exerciseNames)}
         </p>
       </Link>
-      {/* Starting a workout arrives with Phase 4. */}
       <Button
         size="sm"
-        disabled
+        disabled={!!active}
         aria-label={`Start ${template.name}`}
-        title="Workout logging is coming soon"
+        title={active ? 'A workout is already in progress' : undefined}
+        onClick={() => void startTemplate(template.id)}
       >
         <Play /> Start
       </Button>

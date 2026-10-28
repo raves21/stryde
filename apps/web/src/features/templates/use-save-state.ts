@@ -37,6 +37,14 @@ export function useSaveState(delayMs = 500) {
     [delayMs, save],
   )
 
+  /** Write all debounced edits now (before actions that read them back). */
+  const flush = useCallback(async () => {
+    const pending = [...timers.current.values()]
+    timers.current.clear()
+    for (const { timer } of pending) clearTimeout(timer)
+    await Promise.all(pending.map(({ fn }) => save(fn)))
+  }, [save])
+
   // Leaving the screen flushes pending edits instead of dropping them.
   useEffect(() => {
     const pending = timers.current
@@ -49,5 +57,5 @@ export function useSaveState(delayMs = 500) {
     }
   }, [])
 
-  return { state, save, saveLater }
+  return { state, save, saveLater, flush }
 }
