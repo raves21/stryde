@@ -1,14 +1,18 @@
-import '@fontsource/inter/400.css'
-import '@fontsource/inter/500.css'
-import '@fontsource/inter/600.css'
-import '@fontsource/barlow-condensed/600.css'
-import '@fontsource/barlow-condensed/700.css'
+// Latin subsets only: they're precached by the service worker, so keep them small.
+import '@fontsource/inter/latin-400.css'
+import '@fontsource/inter/latin-500.css'
+import '@fontsource/inter/latin-600.css'
+import '@fontsource/barlow-condensed/latin-600.css'
+import '@fontsource/barlow-condensed/latin-700.css'
 import './styles/globals.css'
 
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { listenForInstallPrompt } from './features/pwa/install'
 import { routeTree } from './routeTree.gen'
+
+listenForInstallPrompt()
 
 const router = createRouter({ routeTree })
 
