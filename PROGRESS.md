@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`): **done**, all acceptance criteria pass. Next: Phase 4 — Active Workout (`plan/phase-04-active-workout.md`), not started.
+Phase 4 — Active Workout Logging (`plan/phase-04-active-workout.md`): **done**, all acceptance criteria pass. Next: Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.md`), not started.
 (Phase 1 still has two owner-verification items, see Open questions.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -45,6 +45,17 @@ Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`): **do
   - [x] Tests: `templateToSession` (order, supersets, rest, targets, planned weights, pre-fill, new ids, localDate per timezone); duplicate deep copy; reorder; superset grouping + normalization (table-driven)
   - [x] Browser-verified (Playwright, two contexts): bottom nav + Feed placeholder; offline: custom exercise "Landmine Press" + "Push Day" (4 exercises, 8–12 @2 at 80 kg, A1/A2 superset) → "Offline, 11 changes pending" → online → synced; second device shows the template, superset, targets and weights
 
+- [x] Phase 4 — Active Workout Logging
+  - [x] `packages/shared/src/calc/`: `countedSets`, `effectiveReps`, `e1rm`, `sessionVolume`, `bestSet`, `detectPRs` (all six PR types, baseline rule), table-driven tests. Phase 5 adds chart series and `computeAllPRs`.
+  - [x] Pure rules in `apps/web/src/lib/workout.ts`: previous-set matching, pre-fill per target kind, target-kind patches, rest resolution incl. supersets, formatting (`80×8 @1`, `80×7 F`, durations); `templateToSession` (moved to `lib/`) now pre-fills from previous sets too
+  - [x] Repositories: start empty / from template (one active session), add exercise/set (pre-filled from DB, not screen state), reorder, replace, superset with next / remove (moves out of the block), finish (drops incomplete sets and empty exercises), discard, undo deleted set (`Writer.restore`), edit times (localDate follows), session tree with previous values, exercise history; superset helpers shared with templates (`supersets.ts`)
+  - [x] `/workout/active`: sticky header (minimize, editable name, elapsed, Finish, progress line), exercise cards with SetRow (badge → options sheet, previous → copy, weight/reps/RIR/time inputs in the user's unit, ✓ gated by the shared Zod rule), swipe-to-delete with Undo toast, exercise ⋯ menu, rest per exercise, notes, discard; rest timer in `meta.workout.restTimer` (−15/+15/Skip, flash + vibrate, auto-dismiss 3 s, survives reload); wake lock (device setting `meta.settings.keepScreenOn`, default on)
+  - [x] Finish sheet: duration hero, sets/volume/exercises, PR cards with a one-time gold+volt burst (reduced-motion aware), incomplete-sets warning, notes, share switch; Save → `requestSync()`; toast with "Edit"
+  - [x] `/workout/$sessionId/edit`: same cards in edit mode (no timers), name, start/finish times, share, notes
+  - [x] Start sheet on the center button; Resume state with elapsed time; `ActiveWorkoutMiniBar` above the tab bar; Today start/resume card; template chips → preview sheet with Start; template card Start enabled; dev panel removed
+  - [x] Tests: calc (table-driven), workout rules, workout repository, `SetRow` component (✓ disabled until reps on RIR/failure; Testing Library + happy-dom), template set copy regression
+  - [x] Playwright e2e (`bun run e2e`): template → log sets incl. failure set → reload mid-workout (sets + rest timer resume) → finish → on the server; then the whole workout offline → syncs after reconnect
+
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
@@ -80,6 +91,14 @@ Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`): **do
 - 2026-10-28: Superset rules after reorder/removal (`normalizeSupersets`): a moved exercise joins a group when dropped between two of its members and leaves its group when dropped away; a split group keeps its first run; a group of one is cleared. Grouping moves members next to each other.
 - 2026-10-28: New exercise in a template starts with one plain working set; "Add set" copies the previous set (a warm-up copies as working). Rest choices: Default, 0:30–5:00. Timed planned sets take seconds.
 - 2026-10-28: Vite's `/api` proxy target is `localhost:${STRYDE_API_PORT ?? 3000}`. — Port 3000 was taken by another local project; run `PORT=3001 STRYDE_API_PORT=3001 bun run dev` then.
+- 2026-10-28: Finishing a workout also soft-deletes exercises left without completed sets (not only incomplete sets). Saving with zero completed sets is blocked (discard instead). — Keeps history clean; spec only covers sets.
+- 2026-10-28: "Sets" on the finish sheet counts completed working sets (warm-ups excluded, as in all calculations); volume = Σ weight × reps of those (added weight for bodyweight).
+- 2026-10-28: Keep-screen-on is a device setting in `meta` (`settings.keepScreenOn`, default on), not a synced `user_settings` column. — Not in the data model; it's per device. Settings UI in Phase 6.
+- 2026-10-28: Adding an exercise mid-workout adds one working set; "Add set" copies the last set's type/targets and pre-fills from the previous session (else the last set's weight).
+- 2026-10-28: Exercise reordering in a workout uses Move up/down in the ⋯ menu (no drag); "add to superset" = "Superset with next"; removing a middle member moves it after the group.
+- 2026-10-28: Completing a set in edit mode dates it at the session's `finishedAt`. Clearing a required value on a completed set (or a kind change that needs RIR) un-completes it instead of failing validation.
+- 2026-10-28: Inline per-set PR hint during the workout (UI_DESIGN.md §5.4) is not built yet; PRs show on the finish sheet. — Phase 5 owns PR display.
+- 2026-10-28: Repositories build new rows from the database inside the transaction, never from on-screen state. — The e2e caught "Add set" copying a weight still waiting on the editor's debounce.
 - 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
@@ -91,8 +110,7 @@ Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`): **do
 - Integration tests: `DATABASE_URL=… bun run test` runs API tests on `<db>_test` and the web convergence test against a real API process on `<db>_web_test` (started by `apps/web/src/test/api-server.ts`). Test timestamps must stay within now + 5 min, or the server clamps them.
 - Own-data writes: `mutate(tables, (w) => …)` in `db/repositories/core.ts`. Pass every table the callback reads or writes. Reads for UI: repository list/get functions wrapped in `useLiveQuery` inside a hook.
 - `requestSync()` (`sync/controller.ts`) syncs immediately: call it after finishing a workout (Phase 4).
-- The dev panel (`features/dev/`) is temporary; remove it in Phase 4 once workouts can be logged.
-- Phase 4: replace the center Start button's `/templates` link (`features/shell/components/tab-bar.tsx`) with the start sheet; enable the template card's Start (`features/templates/components/template-card.tsx`); use `ExercisePicker` and `templateToSession`.
+- Phase 5: session detail `/workout/$sessionId` should link to `/workout/$sessionId/edit` (only reachable from the "Workout saved" toast now). `computeAllPRs` + chart series go in `packages/shared/src/calc/`; server PR recompute fills `onSessionsChanged`.
 - Offline checks in a browser need the route chunks loaded first until the Phase 6 service worker precaches them (code-split routes can't load offline).
 - `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) is where Phase 5 PR recompute and Phases 8–9 feed/notifications go.
 - fontsource imports pull in every subset (cyrillic, greek, vietnamese…). Consider latin/latin-ext-only imports in Phase 6 to keep the SW precache small.

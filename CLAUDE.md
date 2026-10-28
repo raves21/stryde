@@ -14,7 +14,7 @@ Phases run in order (index in `IMPLEMENTATION_PLAN.md` §5). v1 is complete afte
 
 ## Commands
 
-The canonical command list is in `AGENTS.md` (`gen:vapid` and `e2e` arrive in later phases). `bun run format` applies Biome fixes. Running a single test (Vitest):
+The canonical command list is in `AGENTS.md` (`gen:vapid` arrives in Phase 9). `bun run e2e` runs Playwright (`apps/web/e2e/`) against its own `<db>_e2e` database on ports 3100/5180; it needs the dev Postgres running (first time: `cd apps/web && bunx playwright install chromium`). `bun run format` applies Biome fixes. Running a single test (Vitest):
 ```
 cd apps/<web|api> && bunx vitest run path/to/file.test.ts   # or packages/shared
 bunx vitest run -t "test name"

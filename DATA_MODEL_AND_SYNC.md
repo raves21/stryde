@@ -121,7 +121,8 @@ db.version(1).stores({
   userSettings:      'id',
   outbox:            '++seq, table, rowId, &[table+rowId]', // pending mutations, one per row
   syncErrors:        '++id',                     // mutations the server rejected
-  meta:              'key',                      // sync.cursor, sync.lastSyncAt, sync.clientId, currentUser, owner
+  meta:              'key',                      // sync.cursor, sync.lastSyncAt, sync.clientId, currentUser, owner,
+                                                 // workout.restTimer { endsAt, durationSec, sessionId, setId }, settings.keepScreenOn
 });
 ```
 
