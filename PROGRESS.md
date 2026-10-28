@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 6 — PWA Hardening & Offline Polish (`plan/phase-06-pwa-offline.md`): **done**; acceptance verified in Chromium, real-device install checks are with the owner (see Open questions). Next: Phase 7 — Docker & CI/CD (`plan/phase-07-docker-cicd.md`), not started.
+Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`): **implemented and verified locally**; the remaining acceptance items need the owner (push to GitHub, secrets, server + Cloudflare setup per `docs/deploy-home-server.md`). After that, **v1 is complete**; Phase 8 (social, v2) is next.
 (Phase 1 still has one owner-verification item: real Google sign-in.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -76,6 +76,16 @@ Phase 6 — PWA Hardening & Offline Polish (`plan/phase-06-pwa-offline.md`): **d
   - [x] Audit: Chrome installability check (CDP `Page.getInstallabilityErrors`) clean, manifest valid, no console errors; Lighthouse mobile: Performance 85, Accessibility 96 → contrast fix, Best practices 96, CLS 0; global `prefers-reduced-motion` rule; 130% text: set-row inputs no longer clip (weight column 72px, digits capped at 20px)
   - [x] E2E now runs against the production build; new `e2e/offline.spec.ts`: load online → offline → reload → Today + a never-opened route render → log and finish a workout → online → synced
 
+- [x] Phase 7 — Docker, CI/CD & Home Server Deploy (implemented)
+  - [x] API serves the built SPA when `STATIC_DIR` is set (`apps/api/src/static.ts`): files with cache headers (hashed `/assets` immutable, `index.html`/`sw.js`/manifest/`registerSW.js` no-cache), SPA fallback for extension-less paths, 404 for missing files (never HTML as JS), path-traversal guard, HEAD; `createApp(staticDir)`; 10 tests
+  - [x] `docker/Dockerfile`: multi-stage on `oven/bun:1.3.14-alpine` (web build with `GIT_SHA`, API-only production deps, non-root `bun`, `HEALTHCHECK` on `/api/health`, `EXPOSE 3000`); `.dockerignore`
+  - [x] `docker/compose.yml` (app + Postgres 17, no published ports, `stryde-app` alias on the external `${TUNNEL_NETWORK:-cf_tunnel}` network, `pgdata`/`uploads` volumes, `DATABASE_URL` built from `POSTGRES_PASSWORD`); `docker/.env.example` updated (`IMAGE_TAG`, `TUNNEL_NETWORK`, `UPLOAD_DIR`, hostname)
+  - [x] `.github/workflows/ci.yml`: Bun 1.3.14, cached install, typecheck, lint, tests with a Postgres 17 service, build, Playwright e2e (traces on failure)
+  - [x] `.github/workflows/deploy.yml`: after CI on `main` (or manual): build + push `ghcr.io/raves21/stryde:{latest,<sha>}` (GHA cache, `DOCKER_PLATFORMS`), ZeroTier (`zerotier/github-action@v1.0.1`), SSH deploy (`IMAGE_TAG` → pull → up -d → prune), wait for `/api/health` = SHA; rollback = run with `tag`; actionlint clean
+  - [x] `docs/deploy-home-server.md`: server setup, tunnel network, GHCR, `.env`, Cloudflare hostname + cache/rewrite settings, Google OAuth, GitHub secrets/variables, deploy, rollback, logs/DB shell/backups, VAPID (v2), troubleshooting, self-hosted runner fallback
+  - [x] Verified locally: image builds (43 s), runs against Postgres 17, `/api/health` = commit SHA, correct cache headers/404s, healthy, non-root; browser against the image: secure httpOnly cookie, SW controls, Chrome installability clean, offline reload, version shown
+  - [ ] Owner: push to GitHub; add secrets/variables; server + Cloudflare setup → first deploy; rollback test; install on Android/iPhone from `https://stryde.obnsolutions.org`
+
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
@@ -95,6 +105,9 @@ Phase 6 — PWA Hardening & Offline Polish (`plan/phase-06-pwa-offline.md`): **d
 - 2026-10-24: Sign-out is disabled while offline (the server must clear the httpOnly cookie). The "unsynced changes" warning was added in Phase 2.
 - 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 - 2026-10-24: Auth rate limiting is on in production only (Better Auth default), forceable in dev with `AUTH_RATE_LIMIT=1`; sign-in 10/min and sign-up 5/min per IP.
+- 2026-10-28: Deployment target: amd64 server, public hostname `stryde.obnsolutions.org`, tunnel network `cf_tunnel` (placeholder, set `TUNNEL_NETWORK` on the server). Tunnel service URL `http://stryde-app:3000` (network alias, avoids clashing with other projects' `app`). — owner answers.
+- 2026-10-28: Deploy is a separate workflow triggered by `workflow_run` of CI on `main` (plus manual dispatch with an optional `tag` for rollbacks); the image tag is the full commit SHA, which `/api/health` reports. CI also runs the Playwright e2e.
+- 2026-10-28: Static serving is our own small `node:fs` middleware in `app.ts` (not `hono/bun`'s `serveStatic`) so the app stays runtime-agnostic and testable under Vitest.
 - 2026-10-28: Workout settings are inline controls on `/profile` (units toggle, rest select, switches) instead of separate `/settings/units` and `/settings/workout` pages; Sync and Install keep their own pages (`/settings/sync`, `/settings/install`). — Fewer taps, nothing to navigate for one control.
 - 2026-10-28: `--text-faint` is only for placeholders, the "previous" column, icons and disabled states; readable copy uses `--text-muted` (Lighthouse flagged #63636E at 3.3:1). Set-input digits cap at 20px so fixed-width cells survive 130% text.
 - 2026-10-28: The SW checks for updates hourly and on load; "Reload" posts `SKIP_WAITING`. Nothing is cached at runtime: own data is in IndexedDB, social data is online-only.
@@ -130,7 +143,9 @@ Phase 6 — PWA Hardening & Offline Polish (`plan/phase-06-pwa-offline.md`): **d
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
 - Inline PR hint on a just-completed set (UI_DESIGN.md §5.4: gold 🏆 "e1RM PR" chip on the row): build it in Phase 6 polish with `detectPRs` against `getExerciseHistory`, or drop it from the design?
-- Install on real devices (owner): Android Chrome → Profile → Install app (or the browser's install prompt); iPhone Safari → Share → Add to Home Screen. Both need HTTPS, so this happens once the app is deployed (Phase 7). Chromium's installability check is already clean.
+- Install on real devices (owner): Android Chrome → Profile → Install app (or the browser's install prompt); iPhone Safari → Share → Add to Home Screen, from `https://stryde.obnsolutions.org` after the first deploy. Chromium's installability check is clean (also against the production image).
+- Image size is 411 MB: `bun install --production --filter @stryde/api` still pulls some web dev tooling (happy-dom, rolldown bindings) into `node_modules`. Harmless at runtime; trim later if it matters.
+- Local `docker build` stalls on package downloads on this machine (BuildKit network, likely ZeroTier MTU); `--network host` works. GitHub runners aren't affected.
 ## Notes for the next session
 - `apps/api/src/app.ts` is the runtime-agnostic Hono app (tests use `app.request()` under Vitest); `src/index.ts` is the Bun server entry. Keep Bun-only APIs out of `app.ts`.
 - Dev DB: `docker compose -f docker/compose.dev.yml up -d` → `postgres://stryde:stryde@localhost:5432/stryde`. Integration tests: `DATABASE_URL=postgres://stryde:stryde@localhost:5432/stryde bun run test`.
