@@ -57,3 +57,21 @@ export function bestSet<T extends CalcSet>(sets: T[]): T | null {
   }
   return best
 }
+
+/** Most reps in one counted set (null without reps). */
+export function maxReps(sets: CalcSet[]): number | null {
+  const reps = countedSets(sets).flatMap((s) => (s.reps === null ? [] : [s.reps]))
+  return reps.length ? Math.max(...reps) : null
+}
+
+/** Σ reps over counted sets (null without reps). */
+export function totalReps(sets: CalcSet[]): number | null {
+  const reps = countedSets(sets).flatMap((s) => (s.reps === null ? [] : [s.reps]))
+  return reps.length ? reps.reduce((a, b) => a + b, 0) : null
+}
+
+/** Longest counted hold in seconds (null without durations). */
+export function longestDuration(sets: CalcSet[]): number | null {
+  const d = countedSets(sets).flatMap((s) => (s.durationSec === null ? [] : [s.durationSec]))
+  return d.length ? Math.max(...d) : null
+}
