@@ -13,7 +13,7 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
   - [x] Acceptance: dark page with Barlow heading + blue shadcn Button (screenshot checked); `/api/health` via proxy; typecheck/lint/test green
 - [x] Phase 1 — Database & Auth (implemented)
   - [x] Drizzle schema for all §2 synced + §3 server-only tables (`apps/api/src/db/schema/`), enums from `@stryde/shared` constants
-  - [x] Migrations: `0000_init` (generated) + `0001_sync_infra` (hand-written: `sync_version_seq`, `set_server_version()` trigger on all 8 synced tables, 15 `DEFERRABLE INITIALLY DEFERRED` FKs); `(userId, serverVersion)` indexes; partial unique "one active session per user"
+  - [x] Migrations: `0000_init` (generated) + `0001_sync_infra` (hand-written: `sync_version_seq`, `set_server_version()` trigger on all 8 synced tables, 15 `DEFERRABLE INITIALLY DEFERRED` FKs); `(userId, serverVersion)` indexes; partial unique "one active session per user" (made non-unique in Phase 2, migration `0002`)
   - [x] Migrations + preset seed run on API boot (`src/index.ts`); `db:generate` / `db:migrate` scripts
   - [x] 84 preset exercises with hard-coded UUIDv7s, idempotent upsert that only rewrites changed rows
   - [x] Better Auth: email+password, username plugin (sign in by email or username), Google provider (enabled when env is set), Drizzle adapter, UUID ids, 60-day rolling cookie session, rate limiting, `user_settings` row created on signup
@@ -41,7 +41,7 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
   - [x] Exercise library `/exercises` (sticky search, muscle chips, custom tag), create/edit sheet, archive with confirm, `/exercises/$id` stub; reusable `ExercisePicker` (search, recent, chips, create custom)
   - [x] Templates `/templates` (cards, preview, Start (disabled until Phase 4), ⋯ Duplicate/Delete), `/templates/new` (creates + redirects), editor `/templates/$id`: name/notes, exercise cards, planned sets (set type, Reps/RIR/Failure, reps or range, RIR, planned weight in the user's unit, seconds for timed), per-exercise rest, add/remove sets and exercises, drag-to-reorder (`@dnd-kit`) + Move up/down, superset multi-select → Group / Ungroup, debounced autosave with "Saving… / Saved"
   - [x] Repositories: `duplicateTemplate` (deep copy, new ids), `reorderTemplateExercises`, `groupSuperset`/`ungroupSuperset`, `normalizeSupersets`, `getTemplateTree`, `listTemplateSummaries`, `listRecentExerciseIds`; new templates go to the end of the list
-  - [x] `templateToSession(tree, { userId, now, timezone, shareWithFriends, newId })` in `features/templates/` (for Phase 4); `localDateIn` moved to `lib/dates.ts`
+  - [x] `templateToSession(tree, { userId, now, timezone, shareWithFriends, newId })` (now in `lib/`, see Phase 4); `localDateIn` moved to `lib/dates.ts`
   - [x] Tests: `templateToSession` (order, supersets, rest, targets, planned weights, pre-fill, new ids, localDate per timezone); duplicate deep copy; reorder; superset grouping + normalization (table-driven)
   - [x] Browser-verified (Playwright, two contexts): bottom nav + Feed placeholder; offline: custom exercise "Landmine Press" + "Push Day" (4 exercises, 8–12 @2 at 80 kg, A1/A2 superset) → "Offline, 11 changes pending" → online → synced; second device shows the template, superset, targets and weights
 
@@ -70,7 +70,7 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
-- 2026-10-24: Accent color changed from volt green to blue (reverted 2026-10-28) `#4D9FFF`; visual style made more minimal (see `UI_DESIGN.md`). — owner preference.
+- 2026-10-24: ~~Accent color changed from volt green to blue `#4D9FFF`; visual style made more minimal.~~ Reverted 2026-10-28 (next entry). — owner preference.
 - 2026-10-28: **Reverted** the 2026-10-24 blue accent and minimal-style change: `UI_DESIGN.md` is back to its original version (volt `#D4FF3A`, `--rir` `#5AB2FF`, uppercase Barlow section labels, 1px borders on surfaces, volt bar under the wordmark, pulsing resume button, PR confetti). — owner preference; matches the Stitch mockups.
 - 2026-10-24: Biome (2.6) for lint + format instead of ESLint + Prettier. — one fast tool, little config. `components/ui/**` and `routeTree.gen.ts` are excluded (generated code).
 - 2026-10-24: Versions pinned at scaffold: Bun 1.3.14 (`packageManager`), TypeScript 7 (native compiler; `baseUrl` is removed, so `paths` are relative to the tsconfig), Vite 8, Vitest 5, Tailwind 4.3, shadcn CLI 4.22 (`radix-nova` style).
@@ -82,23 +82,24 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 - 2026-10-24: Usernames are lowercased (validated post-normalization against `^[a-z0-9_]{3,20}$`); Better Auth's `displayUsername` is disabled. Email sign-ups must include a username (server hook rejects otherwise).
 - 2026-10-24: All Better Auth/server-only table ids are UUIDs (`advanced.database.generateId: 'uuid'`, DB `defaultRandom()`); synced-table ids stay client UUIDv7.
 - 2026-10-24: DB columns are camelCase (matching `DATA_MODEL_AND_SYNC.md`'s quoted names), tables snake_case. Timestamps are `timestamptz`; `localDate` is `date` (string mode); kg values `numeric(7,2)` in number mode.
-- 2026-10-24: The onboarding units choice is stored in Dexie `meta['onboarding.unit']`, because `user_settings` may only be written through repositories, which arrive in Phase 2. **Phase 2 must apply it** to the user's settings row via the repository and then delete the meta key.
-- 2026-10-24: Sign-out is disabled while offline (the server must clear the httpOnly cookie). The "unsynced changes" warning is added once the outbox exists (Phase 2).
+- 2026-10-24: ~~The onboarding units choice is stored in Dexie `meta['onboarding.unit']` until repositories exist.~~ Superseded in Phase 2: the units step writes `user_settings` through the settings repository.
+- 2026-10-24: Sign-out is disabled while offline (the server must clear the httpOnly cookie). The "unsynced changes" warning was added in Phase 2.
+- 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 - 2026-10-24: Auth rate limiting is on in production only (Better Auth default), forceable in dev with `AUTH_RATE_LIMIT=1`; sign-in 10/min and sign-up 5/min per IP.
 - 2026-10-28: The one-active-session partial index is no longer unique (migration `0002`). — With it, the second device's push of its own active session fails, so the conflict can't reach both devices as §8 requires. The repository still refuses to start a second session locally; conflicts are resolved by the dialog. `DATA_MODEL_AND_SYNC.md` §2 updated.
 - 2026-10-28: Sync payload table names are the camelCase Dexie store names (`sessionExercises`, not `session_exercises`). Rows on the wire and in Dexie never carry `serverVersion`.
 - 2026-10-28: The client pushes parents-first by table, then outbox order (spec said outbox order). — A coalesced parent edit moves to the end of the queue, and with >200 entries a child could otherwise land in an earlier batch than its new parent and be rejected for good. LWW is per row, so order between rows doesn't change results.
 - 2026-10-28: Pull applies a row despite a pending outbox entry when the incoming row is strictly newer, and drops the entry. — Otherwise the cursor moves past it, the push is `ignored_stale`, and the device keeps the losing version forever. Documented in §5.
 - 2026-10-28: Cascaded tombstones get `updatedAt = GREATEST(child, parent)` so devices holding a newer child accept them. Children arriving later under a tombstoned parent are tombstoned in the same push.
-- 2026-10-28: Rejected mutations are moved to `syncErrors` and logged; the indicator's details mention them. A list with actions arrives with Settings → Sync (Phase 3+).
+- 2026-10-28: Rejected mutations are moved to `syncErrors` and logged; the indicator's details mention them. A list with actions arrives with Settings → Sync (Phase 6).
 - 2026-10-28: `meta.owner` (id + username) records whose data is local and survives a 401; `setCurrentUser` clears the DB when a different user signs in. — Phase 1 compared against `meta.currentUser`, which a 401 deletes, so another user signing in after a 401 would have inherited the data.
 - 2026-10-28: Different-user warning is a notice on /login and /signup ("@x has N unsynced changes … signing in as someone else deletes them"), not a confirm dialog. — Covers email, username and Google sign-in with one mechanism.
 - 2026-10-28: Two-active-sessions dialog offers "finish the other(s)" (finishedAt = now) or "discard" (soft delete with children). — Simplest option consistent with §8.
 - 2026-10-28: Status `error` covers HTTP errors and malformed responses (retried with backoff); `offline` covers fetch failures and `navigator.onLine === false`.
 - 2026-10-28: Added `dexie-react-hooks`, `uuid`, `date-fns` to web; `postgres` as a web dev dependency for the convergence test's DB setup.
 - 2026-10-28: `/templates` and `/exercises` are reached from Today (templates strip + "See all") and Profile → Library, since neither is a tab. — `UI_DESIGN.md` gives no entry point.
-- 2026-10-28: Until Phase 4, the center Start button opens `/templates` and the template "Start" button is disabled. — Workout logging doesn't exist yet.
-- 2026-10-28: `templateToSession` applies the target part of the pre-fill rules (fixed: reps = target; RIR: rir = target; failure: rir = 0; RIR/failure reps empty). "Previous" values are Phase 4.
+- 2026-10-28: ~~Until Phase 4, the center Start button opens `/templates` and the template "Start" button is disabled.~~ Superseded in Phase 4 (start sheet, Start enabled).
+- 2026-10-28: `templateToSession` applies the target part of the pre-fill rules (fixed: reps = target; RIR: rir = target; failure: rir = 0; RIR/failure reps empty). Since Phase 4 it also takes previous sets (weight from last time, else planned).
 - 2026-10-28: Superset rules after reorder/removal (`normalizeSupersets`): a moved exercise joins a group when dropped between two of its members and leaves its group when dropped away; a split group keeps its first run; a group of one is cleared. Grouping moves members next to each other.
 - 2026-10-28: New exercise in a template starts with one plain working set; "Add set" copies the previous set (a warm-up copies as working). Rest choices: Default, 0:30–5:00. Timed planned sets take seconds.
 - 2026-10-28: Vite's `/api` proxy target is `localhost:${STRYDE_API_PORT ?? 3000}`. — Port 3000 was taken by another local project; run `PORT=3001 STRYDE_API_PORT=3001 bun run dev` then.
@@ -108,15 +109,15 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 - 2026-10-28: Adding an exercise mid-workout adds one working set; "Add set" copies the last set's type/targets and pre-fills from the previous session (else the last set's weight).
 - 2026-10-28: Exercise reordering in a workout uses Move up/down in the ⋯ menu (no drag); "add to superset" = "Superset with next"; removing a middle member moves it after the group.
 - 2026-10-28: Completing a set in edit mode dates it at the session's `finishedAt`. Clearing a required value on a completed set (or a kind change that needs RIR) un-completes it instead of failing validation.
-- 2026-10-28: Inline per-set PR hint during the workout (UI_DESIGN.md §5.4) is not built yet; PRs show on the finish sheet. — Phase 5 owns PR display.
+- 2026-10-28: Inline per-set PR hint during the workout (UI_DESIGN.md §5.4) is **still not built** (PRs show on the finish sheet, session detail, records and charts). See Open questions.
 - 2026-10-28: Repositories build new rows from the database inside the transaction, never from on-screen state. — The e2e caught "Add set" copying a weight still waiting on the editor's debounce.
 - 2026-10-28: PR display (history counts, session detail, records, recent PRs, chart dots) comes from one timeline per exercise (`prTimeline` over all finished sessions), recomputed live from Dexie; the server stores only current records (`personal_records`). — One source of truth; edits and deletes are reflected everywhere.
 - 2026-10-28: Charts: weighted = e1RM / Best set (top-set weight) / Volume; bodyweight = Max reps / Total reps / e1RM (added weight); timed = Duration. PR dots: e1RM↔e1rm, Best set↔weight, Volume↔volume, Max reps↔max_reps, Duration↔duration; Total reps has none.
 - 2026-10-28: Headline delta compares the latest session's value with the latest one at least 90 days old; hidden when there is none. Weeks start Monday; stats use session `localDate`s.
 - 2026-10-28: `feed_events.prs` isn't written yet: feed events are created in Phase 8, which can call the same timeline.
-- 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
+- Inline PR hint on a just-completed set (UI_DESIGN.md §5.4: gold 🏆 "e1RM PR" chip on the row): build it in Phase 6 polish with `detectPRs` against `getExerciseHistory`, or drop it from the design?
 - "Reload with DevTools offline" can't pass before Phase 6: without a service worker the browser can't load `index.html` offline at all. The guard itself works without the network (verified by blocking `/api/*` and reloading). Proposal: tick this item in Phase 6.
 ## Notes for the next session
 - `apps/api/src/app.ts` is the runtime-agnostic Hono app (tests use `app.request()` under Vitest); `src/index.ts` is the Bun server entry. Keep Bun-only APIs out of `app.ts`.
@@ -124,9 +125,11 @@ Phase 5 — History, Calendar, Progress & PRs (`plan/phase-05-history-progress.m
 - `0001_sync_infra.sql` is hand-written. Never delete the migrations folder to regenerate (that wipes it). New synced tables need their trigger, owner FK and deferred FKs added in a new custom migration (`drizzle-kit generate --custom`).
 - Integration tests: `DATABASE_URL=… bun run test` runs API tests on `<db>_test` and the web convergence test against a real API process on `<db>_web_test` (started by `apps/web/src/test/api-server.ts`). Test timestamps must stay within now + 5 min, or the server clamps them.
 - Own-data writes: `mutate(tables, (w) => …)` in `db/repositories/core.ts`. Pass every table the callback reads or writes. Reads for UI: repository list/get functions wrapped in `useLiveQuery` inside a hook.
-- `requestSync()` (`sync/controller.ts`) syncs immediately: call it after finishing a workout (Phase 4).
+- `requestSync()` (`sync/controller.ts`) syncs immediately (used after finishing a workout and by the indicator's Retry); Settings → "Sync now" (Phase 6) should call it too.
 - Vite dev may reload once the first time a newly used dependency is imported (e.g. recharts); harmless, but browser scripts should allow for it.
 - Offline checks in a browser need the route chunks loaded first until the Phase 6 service worker precaches them (code-split routes can't load offline).
-- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) is where Phase 5 PR recompute and Phases 8–9 feed/notifications go.
+- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5); feed events, notifications and SSE hints (Phases 8–9) go there too.
+- `bun run e2e` (Playwright, `apps/web/e2e/`) needs the dev Postgres; it uses `<db>_e2e` and ports 3100/5180. First run on a machine: `cd apps/web && bunx playwright install chromium`.
+- Local port clash: if 3000 is taken (e.g. another project's dev server), run `PORT=3001 STRYDE_API_PORT=3001 bun run dev`.
 - fontsource imports pull in every subset (cyrillic, greek, vietnamese…). Consider latin/latin-ext-only imports in Phase 6 to keep the SW precache small.
 - Verify `web-push` works under Bun (test planned in Phase 9).
