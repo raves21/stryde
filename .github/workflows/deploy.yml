@@ -1,0 +1,128 @@
+name: Deploy
+
+# After CI passes on main: build the image, push it to GHCR, deploy it to the home
+# server over ZeroTier + SSH, and wait for /api/health to report the new commit.
+# Rollback: run this workflow manually with `tag` = an older commit SHA (its image is
+# already in GHCR, so nothing is rebuilt).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag (full commit SHA) to deploy. Empty = build and deploy the current main.
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.tag == '') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.sha.outputs.tag }}
+    steps:
+      - id: sha
+        run: echo "tag=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.sha.outputs.tag }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          platforms: ${{ vars.DOCKER_PLATFORMS || 'linux/amd64' }}
+          build-args: GIT_SHA=${{ steps.sha.outputs.tag }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.sha.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    # Runs after a build, or alone for a rollback (build skipped, tag given).
+    if: >-
+      always() &&
+      (needs.build.result == 'success' || (needs.build.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.tag != ''))
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    env:
+      TAG: ${{ inputs.tag || needs.build.outputs.tag }}
+      APP_URL: ${{ vars.APP_URL || 'https://stryde.obnsolutions.org' }}
+    steps:
+      - name: Join ZeroTier
+        uses: zerotier/github-action@v1.0.1
+        with:
+          network_id: ${{ secrets.ZEROTIER_NETWORK_ID }}
+          auth_token: ${{ secrets.ZEROTIER_CENTRAL_TOKEN }}
+
+      - name: Wait for the server on ZeroTier
+        run: |
+          for _ in $(seq 1 30); do
+            if nc -z -w 3 "${{ secrets.DEPLOY_HOST }}" 22; then exit 0; fi
+            sleep 3
+          done
+          echo "::error::Server not reachable over ZeroTier"; exit 1
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_KNOWN_HOSTS not set; trusting the host key on first use"
+            ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" > ~/.ssh/known_hosts
+          fi
+
+      - name: Deploy ${{ env.TAG }}
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "TAG='$TAG' DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'SCRIPT'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" .env
+          docker compose pull app
+          docker compose up -d app
+          docker image prune -f
+          SCRIPT
+
+      - name: Wait for /api/health to report ${{ env.TAG }}
+        run: |
+          for i in $(seq 1 40); do
+            version=$(curl -fsS "$APP_URL/api/health?ts=$(date +%s)" | jq -r .version || true)
+            echo "attempt $i: $version"
+            if [ "$version" = "$TAG" ]; then exit 0; fi
+            sleep 3
+          done
+          echo "::error::$APP_URL did not report $TAG within 2 minutes"; exit 1
