@@ -1,6 +1,7 @@
 import type { ExerciseRow, TemplateExerciseRow, TemplateRow, TemplateSetRow } from '@stryde/shared'
 import { db as defaultDb, type StrydeDb } from '../db'
 import { mutate, type NewRow, type RowPatch, type Writer } from './core'
+import { applyPlan, asPlan, planGroup, planOrder, planUngroup } from './supersets'
 
 const TABLES = ['templates', 'templateExercises', 'templateSets'] as const
 
@@ -66,7 +67,11 @@ export function removeTemplateExercise(id: string, db: StrydeDb = defaultDb) {
       const row = await w.get('templateExercises', id)
       if (!row) return
       await deleteTemplateExercises(w, [id])
-      await applyOrder(w, await getTemplateExercises(row.templateId, w.db))
+      await applyPlan(
+        w,
+        'templateExercises',
+        asPlan(await getTemplateExercises(row.templateId, w.db)),
+      )
     },
     db,
   )
@@ -74,6 +79,32 @@ export function removeTemplateExercise(id: string, db: StrydeDb = defaultDb) {
 
 export function addTemplateSet(input: NewRow<'templateSets'>, db: StrydeDb = defaultDb) {
   return mutate([...TABLES], (w) => w.insert('templateSets', input), db)
+}
+
+/**
+ * Add a set copying the exercise's last set as stored (a warm-up copies as working);
+ * the first set is a plain working set. Read inside the transaction so it never copies
+ * a stale on-screen value.
+ */
+export function addNextTemplateSet(templateExerciseId: string, db: StrydeDb = defaultDb) {
+  return mutate(
+    [...TABLES],
+    async (w) => {
+      const last = (await getTemplateSets(templateExerciseId, w.db)).at(-1)
+      return w.insert('templateSets', {
+        templateExerciseId,
+        position: (last?.position ?? -1) + 1,
+        setType: 'working',
+        targetKind: last?.targetKind ?? 'fixed',
+        targetReps: last?.targetReps ?? null,
+        targetRepsMax: last?.targetRepsMax ?? null,
+        targetRir: last?.targetRir ?? null,
+        plannedWeightKg: last?.plannedWeightKg ?? null,
+        plannedDurationSec: last?.plannedDurationSec ?? null,
+      })
+    },
+    db,
+  )
 }
 
 export function updateTemplateSet(
@@ -153,47 +184,6 @@ export function duplicateTemplate(id: string, db: StrydeDb = defaultDb) {
   )
 }
 
-/**
- * Superset groups after a reorder, by position. The moved exercise joins a group when
- * dropped between two of its members, and leaves its own group when dropped away from
- * it. Then a group split into several runs keeps only its first run, and a group of one
- * is cleared. Returns the group for every item, in the given order.
- */
-export function normalizeSupersets(
-  items: { id: string; supersetGroup: string | null }[],
-  movedId?: string,
-): (string | null)[] {
-  const groups = items.map((i) => i.supersetGroup)
-  const m = movedId === undefined ? -1 : items.findIndex((i) => i.id === movedId)
-  if (m >= 0) {
-    const before = groups[m - 1] ?? null
-    const after = groups[m + 1] ?? null
-    if (before && before === after) groups[m] = before
-    else if (groups[m] && groups[m] !== before && groups[m] !== after) groups[m] = null
-  }
-  const closed = new Set<string>()
-  for (let i = 0; i < groups.length; i += 1) {
-    const g = groups[i]
-    if (!g) continue
-    if (closed.has(g)) groups[i] = null
-    else if (groups[i + 1] !== g) closed.add(g)
-  }
-  const counts = new Map<string, number>()
-  for (const g of groups) if (g) counts.set(g, (counts.get(g) ?? 0) + 1)
-  return groups.map((g) => (g && counts.get(g) === 1 ? null : g))
-}
-
-/** Write positions 0..n-1 in this order and normalized superset groups, where changed. */
-async function applyOrder(w: Writer, rows: TemplateExerciseRow[], movedId?: string) {
-  const groups = normalizeSupersets(rows, movedId)
-  for (const [position, row] of rows.entries()) {
-    const supersetGroup = groups[position] ?? null
-    if (row.position !== position || row.supersetGroup !== supersetGroup) {
-      await w.update('templateExercises', row.id, { position, supersetGroup })
-    }
-  }
-}
-
 /** Reorder a template's exercises to match `orderedIds`; `movedId` is the one the user moved. */
 export function reorderTemplateExercises(
   templateId: string,
@@ -204,44 +194,20 @@ export function reorderTemplateExercises(
   return mutate(
     [...TABLES],
     async (w) => {
-      const byId = new Map((await getTemplateExercises(templateId, w.db)).map((r) => [r.id, r]))
-      await applyOrder(
-        w,
-        orderedIds.flatMap((id) => byId.get(id) ?? []),
-        movedId,
-      )
+      const rows = await getTemplateExercises(templateId, w.db)
+      await applyPlan(w, 'templateExercises', planOrder(rows, orderedIds), movedId)
     },
     db,
   )
 }
 
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-/**
- * Group exercises as a superset: they get the next free letter and are moved next to
- * each other at the position of the first one.
- */
+/** Group exercises as a superset (next free letter), moved next to each other. */
 export function groupSuperset(templateId: string, ids: string[], db: StrydeDb = defaultDb) {
   return mutate(
     [...TABLES],
     async (w) => {
-      if (ids.length < 2) throw new Error('A superset needs at least two exercises')
-      const all = await getTemplateExercises(templateId, w.db)
-      const used = new Set(all.map((te) => te.supersetGroup))
-      const letter = [...LETTERS].find((l) => !used.has(l))
-      if (!letter) throw new Error('No superset letters left')
-      const selected = new Set(ids)
-      const first = all.findIndex((te) => selected.has(te.id))
-      const members = all.filter((te) => selected.has(te.id))
-      const rest = all.filter((te) => !selected.has(te.id))
-      const order = [...rest.slice(0, first), ...members, ...rest.slice(first)]
-      for (const [position, te] of order.entries()) {
-        const group = selected.has(te.id) ? letter : te.supersetGroup
-        if (te.position !== position || te.supersetGroup !== group) {
-          await w.update('templateExercises', te.id, { position, supersetGroup: group })
-        }
-      }
-      await clearLoneGroups(w, templateId)
+      const rows = await getTemplateExercises(templateId, w.db)
+      await applyPlan(w, 'templateExercises', planGroup(rows, ids))
     },
     db,
   )
@@ -251,25 +217,11 @@ export function ungroupSuperset(templateId: string, ids: string[], db: StrydeDb 
   return mutate(
     [...TABLES],
     async (w) => {
-      for (const id of ids) await w.update('templateExercises', id, { supersetGroup: null })
-      await clearLoneGroups(w, templateId)
+      const rows = await getTemplateExercises(templateId, w.db)
+      await applyPlan(w, 'templateExercises', planUngroup(rows, ids))
     },
     db,
   )
-}
-
-/** A superset of one isn't a superset. */
-async function clearLoneGroups(w: Writer, templateId: string) {
-  const all = await getTemplateExercises(templateId, w.db)
-  const counts = new Map<string, number>()
-  for (const te of all) {
-    if (te.supersetGroup) counts.set(te.supersetGroup, (counts.get(te.supersetGroup) ?? 0) + 1)
-  }
-  for (const te of all) {
-    if (te.supersetGroup && counts.get(te.supersetGroup) === 1) {
-      await w.update('templateExercises', te.id, { supersetGroup: null })
-    }
-  }
 }
 
 export async function getTemplate(id: string, db: StrydeDb = defaultDb) {

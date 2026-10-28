@@ -1,4 +1,4 @@
-import type { ExerciseRow, TemplateExerciseRow, TemplateSetRow } from '@stryde/shared'
+import type { ExerciseRow, SetRow, TemplateExerciseRow, TemplateSetRow } from '@stryde/shared'
 import { describe, expect, it } from 'vitest'
 import type { TemplateTree } from '@/db/repositories/templates'
 import { templateToSession } from './template-to-session'
@@ -179,6 +179,38 @@ describe('templateToSession', () => {
         durationSec: 90,
         completedAt: null,
       },
+    ])
+  })
+
+  it('pre-fills weights and reps from last time over planned values', () => {
+    const previous = new Map([
+      [
+        'ex-bench',
+        [
+          { setType: 'warmup', weightKg: 45, reps: 10, rir: null, durationSec: null },
+          { setType: 'working', weightKg: 82.5, reps: 9, rir: 1, durationSec: null },
+        ] as SetRow[],
+      ],
+      [
+        'ex-dips',
+        [{ setType: 'working', weightKg: 10, reps: 12, rir: null, durationSec: null }] as SetRow[],
+      ],
+    ])
+    let n = 0
+    const { sets } = templateToSession(tree, {
+      userId: USER,
+      now: new Date('2026-10-28T20:30:00.000Z'),
+      timezone: 'UTC',
+      shareWithFriends: true,
+      newId: () => `id-${++n}`,
+      previousSets: previous,
+    })
+    expect(sets.map((s) => [s.weightKg, s.reps, s.rir])).toEqual([
+      [45, 10, null], // warm-up ← previous warm-up weight, target reps
+      [82.5, null, 2], // RIR set ← previous working set 1 weight; reps empty; rir = target
+      [77.5, null, 0], // failure: no previous working set 2 → planned weight; rir 0
+      [10, 8, null], // dips fixed ← previous weight, target reps
+      [null, null, null],
     ])
   })
 

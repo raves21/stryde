@@ -59,6 +59,12 @@ export class Writer {
     }
   }
 
+  /** Undo a soft delete (e.g. the "Undo" toast); a newer updatedAt wins under LWW. */
+  async restore(table: SyncTable, id: string): Promise<void> {
+    const row = await this.db.syncTable(table).get(id)
+    if (row?.deletedAt) await this.put(table, { ...row, deletedAt: null, updatedAt: this.now })
+  }
+
   /** A live (not deleted) row. */
   async get<T extends SyncTable>(table: T, id: string): Promise<SyncRowMap[T] | undefined> {
     const row = (await this.db.syncTable(table).get(id)) as SyncRowMap[T] | undefined

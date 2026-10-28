@@ -1,6 +1,7 @@
 import type { SessionExerciseRow, SessionRow, SetRow } from '@stryde/shared'
 import type { TemplateTree } from '@/db/repositories/templates'
-import { localDateIn } from '@/lib/dates'
+import { localDateIn } from './dates'
+import { matchPrevious, prefill } from './workout'
 
 export type SessionFromTemplate = {
   session: SessionRow
@@ -11,9 +12,8 @@ export type SessionFromTemplate = {
 /**
  * Copy a template into new session rows (PRODUCT_SPEC.md §4.2): order, supersets, rest,
  * targets and planned weights, with fresh ids, so later template edits never touch the
- * session. Applies the target part of the pre-fill rules (§4.3): fixed sets get reps =
- * target, RIR sets get rir = target, failure sets get rir = 0; reps stay empty for
- * RIR/failure sets. Phase 4 layers "previous" values on top.
+ * session. Sets are pre-filled by the §4.3 rules from `previousSets` (last time's
+ * completed sets per exercise) and the planned values.
  */
 export function templateToSession(
   tree: TemplateTree,
@@ -23,6 +23,7 @@ export function templateToSession(
     timezone: string
     shareWithFriends: boolean
     newId: () => string
+    previousSets?: ReadonlyMap<string, SetRow[]>
   },
 ): SessionFromTemplate {
   const { userId, now, timezone, newId } = options
@@ -55,6 +56,7 @@ export function templateToSession(
       restSeconds: row.restSeconds,
     }
     sessionExercises.push(se)
+    const previous = matchPrevious(plannedSets, options.previousSets?.get(row.exerciseId) ?? [])
     plannedSets.forEach((planned, setPosition) => {
       sets.push({
         ...common,
@@ -66,15 +68,10 @@ export function templateToSession(
         targetReps: planned.targetReps,
         targetRepsMax: planned.targetRepsMax,
         targetRir: planned.targetRir,
-        weightKg: planned.plannedWeightKg,
-        reps: planned.targetKind === 'fixed' ? planned.targetReps : null,
-        rir:
-          planned.targetKind === 'rir'
-            ? planned.targetRir
-            : planned.targetKind === 'failure'
-              ? 0
-              : null,
-        durationSec: planned.plannedDurationSec,
+        ...prefill(planned, previous[setPosition], {
+          weightKg: planned.plannedWeightKg,
+          durationSec: planned.plannedDurationSec,
+        }),
         completedAt: null,
       })
     })

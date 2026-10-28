@@ -38,9 +38,4 @@ export const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
 /** Rest choices in seconds (0:30 – 5:00). */
 export const REST_OPTIONS = [30, 45, 60, 75, 90, 120, 150, 180, 240, 300]
 
-/** 90 → "1:30". */
-export function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+export { formatDuration } from '@/lib/workout'

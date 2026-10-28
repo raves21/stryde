@@ -55,3 +55,8 @@ export async function getSets(
     .toArray()
   return rows.filter((r) => !r.deletedAt)
 }
+
+/** Undo a set deletion (swipe-to-delete toast). */
+export function restoreSet(id: string, db: StrydeDb = defaultDb) {
+  return mutate([...TABLES], (w) => w.restore('sets', id), db)
+}

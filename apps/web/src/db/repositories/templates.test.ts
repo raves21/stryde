@@ -3,7 +3,9 @@ import type { NewRow } from '@/db/repositories/core'
 import { signedInDb } from '@/test/local-db'
 import type { StrydeDb } from '../db'
 import { createExercise } from './exercises'
+import { normalizeSupersets } from './supersets'
 import {
+  addNextTemplateSet,
   addTemplateExercise,
   addTemplateSet,
   createTemplate,
@@ -12,7 +14,6 @@ import {
   getTemplateTree,
   groupSuperset,
   listTemplateSummaries,
-  normalizeSupersets,
   removeTemplateExercise,
   reorderTemplateExercises,
   ungroupSuperset,
@@ -109,6 +110,22 @@ describe('template repository', () => {
     expect(duplicate.exercises.every((e) => e.row.templateId === copy.id)).toBe(true)
     // Every copied row is queued for sync.
     expect(await db.outbox.where('table').equals('templateSets').count()).toBe(12)
+  })
+
+  it('a new set copies the stored last set (a warm-up copies as working)', async () => {
+    db = await signedInDb(USER)
+    const { t } = await pushDay(db)
+    const te = (await getTemplateTree(t.id, db))?.exercises[0]?.row
+    const next = await addNextTemplateSet(te?.id ?? '', db)
+    expect(next).toMatchObject({
+      position: 2,
+      setType: 'working',
+      targetKind: 'rir',
+      targetReps: 8,
+      targetRepsMax: 12,
+      targetRir: 2,
+      plannedWeightKg: 70,
+    })
   })
 
   it('leaves the original alone when the copy is deleted', async () => {
