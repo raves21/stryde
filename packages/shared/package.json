@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./units": "./src/units.ts",
     "./constants": "./src/constants.ts",
-    "./auth": "./src/auth.ts"
+    "./auth": "./src/auth.ts",
+    "./schemas": "./src/schemas/index.ts"
   },
   "scripts": {
     "build": "echo 'shared: consumed as TS source, nothing to build'",
