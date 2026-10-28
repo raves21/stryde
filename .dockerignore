@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.vite
+.git
+.github
+**/.env
+**/.env.*
+!docker/.env.example
+**/test-results
+**/playwright-report
+**/*.log
+docs
+plan

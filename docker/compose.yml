@@ -1,0 +1,45 @@
+# Production stack on the home server (docs/deploy-home-server.md).
+# Lives in DEPLOY_PATH next to a filled-in .env (copy docker/.env.example).
+# No published ports: cloudflared reaches the app over the shared tunnel network.
+name: stryde
+services:
+  app:
+    image: ghcr.io/raves21/stryde:${IMAGE_TAG:-latest}
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://stryde:${POSTGRES_PASSWORD}@db:5432/stryde
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      internal: {}
+      tunnel:
+        # Cloudflare Tunnel public hostname → http://stryde-app:3000
+        aliases: [stryde-app]
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stryde
+      POSTGRES_DB: stryde
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stryde"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+
+networks:
+  internal: {}
+  tunnel:
+    external: true
+    name: ${TUNNEL_NETWORK:-cf_tunnel}
+
+volumes:
+  pgdata: {}
+  uploads: {}
