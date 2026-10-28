@@ -15,4 +15,6 @@ export const env = {
   betterAuthSecret: required('BETTER_AUTH_SECRET', 'dev-only-secret-change-me-in-production-32b'),
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  /** Built web app to serve (the Docker image sets /app/public); unset in dev (Vite serves it). */
+  staticDir: process.env.STATIC_DIR,
 }
