@@ -1,15 +1,5 @@
 import { sql } from 'drizzle-orm'
-import {
-  boolean,
-  date,
-  index,
-  integer,
-  numeric,
-  pgTable,
-  text,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { boolean, date, index, integer, numeric, pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { syncedColumns, timestamptz } from './columns'
 import {
   equipmentEnum,
@@ -98,8 +88,9 @@ export const sessions = pgTable(
   (t) => [
     index().on(t.userId, t.serverVersion),
     index().on(t.userId, t.localDate),
-    // Safety net; conflicts are resolved client-side (DATA_MODEL_AND_SYNC.md §8).
-    uniqueIndex('sessions_one_active_per_user')
+    // Deliberately not unique: two devices can each start a workout offline, and both
+    // must sync so the client can ask which to keep (DATA_MODEL_AND_SYNC.md §8).
+    index('sessions_active_per_user')
       .on(t.userId)
       .where(sql`"finishedAt" IS NULL AND "deletedAt" IS NULL`),
   ],

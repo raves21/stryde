@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { auth } from './auth'
 import { healthRoute } from './routes/health'
 import { meRoute } from './routes/me'
+import { syncRoute } from './routes/sync'
 import { usersRoute } from './routes/users'
 
 // Runtime-agnostic app (no Bun APIs) so tests can call app.request() under Vitest.
@@ -11,5 +12,6 @@ export const app = new Hono()
   .route('/health', healthRoute)
   .route('/me', meRoute)
   .route('/users', usersRoute)
+  .route('/sync', syncRoute)
 
 export type AppType = typeof app

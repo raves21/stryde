@@ -39,3 +39,12 @@ export function uniqueUser() {
     name: 'Test User',
   }
 }
+
+/** Sign up a fresh user; returns the session cookie and user id. */
+export async function signUpUser(): Promise<{ cookie: string; userId: string }> {
+  const res = await postJson('/api/auth/sign-up/email', uniqueUser())
+  if (res.status !== 200) throw new Error(`sign-up failed: ${res.status}`)
+  const cookie = cookieFrom(res)
+  const me = (await (await get('/api/me', cookie)).json()) as { user: { id: string } }
+  return { cookie, userId: me.user.id }
+}

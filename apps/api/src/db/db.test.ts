@@ -122,7 +122,7 @@ describe.skipIf(!hasDatabase)('database', () => {
     ).rejects.toThrow()
   })
 
-  it('allows only one active session per user', async () => {
+  it('accepts two active sessions per user (resolved on the client)', async () => {
     const userId = await createUser()
     const base = {
       userId,
@@ -134,7 +134,6 @@ describe.skipIf(!hasDatabase)('database', () => {
       updatedAt: new Date(),
     }
     await db.insert(sessions).values({ ...base, id: uuidv7() })
-    await expect(db.insert(sessions).values({ ...base, id: uuidv7() })).rejects.toThrow()
-    await db.insert(sessions).values({ ...base, id: uuidv7(), finishedAt: new Date() })
+    await db.insert(sessions).values({ ...base, id: uuidv7() })
   })
 })

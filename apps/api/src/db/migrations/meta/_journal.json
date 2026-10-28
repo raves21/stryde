@@ -15,6 +15,13 @@
       "when": 1792833055716,
       "tag": "0001_sync_infra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793148362902,
+      "tag": "0002_allow_concurrent_active_sessions",
+      "breakpoints": true
     }
   ]
 }
