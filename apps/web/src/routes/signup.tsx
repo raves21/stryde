@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { GoogleButton } from '@/features/auth/components/google-button'
 import { OfflineBanner } from '@/features/auth/components/offline-banner'
 import { OrDivider } from '@/features/auth/components/or-divider'
+import { UnsyncedDataNotice } from '@/features/auth/components/unsynced-data-notice'
 import { UsernameField, type UsernameStatus } from '@/features/auth/components/username-field'
 import { Wordmark } from '@/features/auth/components/wordmark'
 import { completeSignIn } from '@/features/auth/session'
@@ -58,6 +59,7 @@ function SignupPage() {
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 px-4 py-12">
       <Wordmark />
       {!online && <OfflineBanner message="You're offline, so signing up needs a connection." />}
+      <UnsyncedDataNotice />
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="name">Display name</Label>

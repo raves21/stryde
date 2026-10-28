@@ -2,6 +2,7 @@ import { createRootRoute, Outlet, redirect, useRouter } from '@tanstack/react-ro
 import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { resolveSession, revalidateSession } from '@/features/auth/session'
+import { SyncRuntime } from '@/features/sync/sync-runtime'
 
 const PUBLIC_PATHS = new Set(['/login', '/signup'])
 
@@ -25,6 +26,7 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   const router = useRouter()
+  const { user } = Route.useRouteContext()
 
   useEffect(() => {
     let cancelled = false
@@ -45,7 +47,14 @@ function RootLayout() {
 
   return (
     <div className="min-h-dvh bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
-      <Outlet />
+      {user ? (
+        // Keyed by user so switching accounts restarts sync from a clean state.
+        <SyncRuntime key={user.user.id}>
+          <Outlet />
+        </SyncRuntime>
+      ) : (
+        <Outlet />
+      )}
       <Toaster position="top-center" />
     </div>
   )
