@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 2 — Local DB & Sync (`plan/phase-02-local-db-sync.md`): **done**, all acceptance criteria pass. Next: Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`), not started.
+Phase 3 — Exercises & Templates (`plan/phase-03-exercises-templates.md`): **done**, all acceptance criteria pass. Next: Phase 4 — Active Workout (`plan/phase-04-active-workout.md`), not started.
 (Phase 1 still has two owner-verification items, see Open questions.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -35,6 +35,16 @@ Phase 2 — Local DB & Sync (`plan/phase-02-local-db-sync.md`): **done**, all ac
   - [x] Biome `noRestrictedImports`: routes/components can't import `@/db/db`, `dexie`, or the sync engine/transport
   - [x] Tests: shared schemas (table-driven); API integration for every §8 sync case; repositories (atomic row + coalesced outbox, cascades, validation); engine with a scripted transport; **two-device convergence against the real API** (web Vitest global setup starts the API on `<db>_web_test`)
   - [x] Browser-verified (Playwright, headless, two contexts): offline rows → "Offline, 5 changes pending" → online → synced; second profile sees "Downloading your data" and the same rows; 500s → error → Retry → synced; two workouts started offline → dialog → discard → resolved on both; sign-out warning; onboarding unit `lb` reached the server
+- [x] Phase 3 — Exercises & Templates
+  - [x] App shell: pathless `_app` layout (`routes/_app.tsx`) with the bottom tab bar (Today · Feed · center Start · Progress · Profile); `TopBar` (title + `SyncIndicator`, optional back/actions); Feed and Progress placeholders; Profile header + Library links + sign-out
+  - [x] Building blocks in `components/app/`: `BottomSheet` (Drawer), `ConfirmDialog` (AlertDialog), `EmptyState`, `NumberInput`, `Screen`, `SectionLabel`, `TopBar`; shadcn `checkbox` added
+  - [x] Exercise library `/exercises` (sticky search, muscle chips, custom tag), create/edit sheet, archive with confirm, `/exercises/$id` stub; reusable `ExercisePicker` (search, recent, chips, create custom)
+  - [x] Templates `/templates` (cards, preview, Start (disabled until Phase 4), ⋯ Duplicate/Delete), `/templates/new` (creates + redirects), editor `/templates/$id`: name/notes, exercise cards, planned sets (set type, Reps/RIR/Failure, reps or range, RIR, planned weight in the user's unit, seconds for timed), per-exercise rest, add/remove sets and exercises, drag-to-reorder (`@dnd-kit`) + Move up/down, superset multi-select → Group / Ungroup, debounced autosave with "Saving… / Saved"
+  - [x] Repositories: `duplicateTemplate` (deep copy, new ids), `reorderTemplateExercises`, `groupSuperset`/`ungroupSuperset`, `normalizeSupersets`, `getTemplateTree`, `listTemplateSummaries`, `listRecentExerciseIds`; new templates go to the end of the list
+  - [x] `templateToSession(tree, { userId, now, timezone, shareWithFriends, newId })` in `features/templates/` (for Phase 4); `localDateIn` moved to `lib/dates.ts`
+  - [x] Tests: `templateToSession` (order, supersets, rest, targets, planned weights, pre-fill, new ids, localDate per timezone); duplicate deep copy; reorder; superset grouping + normalization (table-driven)
+  - [x] Browser-verified (Playwright, two contexts): bottom nav + Feed placeholder; offline: custom exercise "Landmine Press" + "Push Day" (4 exercises, 8–12 @2 at 80 kg, A1/A2 superset) → "Offline, 11 changes pending" → online → synced; second device shows the template, superset, targets and weights
+
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
 - 2026-10-24: Tests stay on Vitest (run via `bun run test`), not `bun test`. — Vite/`fake-indexeddb` setup on the web side fits Vitest; one runner for all packages.
@@ -64,6 +74,12 @@ Phase 2 — Local DB & Sync (`plan/phase-02-local-db-sync.md`): **done**, all ac
 - 2026-10-28: Two-active-sessions dialog offers "finish the other(s)" (finishedAt = now) or "discard" (soft delete with children). — Simplest option consistent with §8.
 - 2026-10-28: Status `error` covers HTTP errors and malformed responses (retried with backoff); `offline` covers fetch failures and `navigator.onLine === false`.
 - 2026-10-28: Added `dexie-react-hooks`, `uuid`, `date-fns` to web; `postgres` as a web dev dependency for the convergence test's DB setup.
+- 2026-10-28: `/templates` and `/exercises` are reached from Today (templates strip + "See all") and Profile → Library, since neither is a tab. — `UI_DESIGN.md` gives no entry point.
+- 2026-10-28: Until Phase 4, the center Start button opens `/templates` and the template "Start" button is disabled. — Workout logging doesn't exist yet.
+- 2026-10-28: `templateToSession` applies the target part of the pre-fill rules (fixed: reps = target; RIR: rir = target; failure: rir = 0; RIR/failure reps empty). "Previous" values are Phase 4.
+- 2026-10-28: Superset rules after reorder/removal (`normalizeSupersets`): a moved exercise joins a group when dropped between two of its members and leaves its group when dropped away; a split group keeps its first run; a group of one is cleared. Grouping moves members next to each other.
+- 2026-10-28: New exercise in a template starts with one plain working set; "Add set" copies the previous set (a warm-up copies as working). Rest choices: Default, 0:30–5:00. Timed planned sets take seconds.
+- 2026-10-28: Vite's `/api` proxy target is `localhost:${STRYDE_API_PORT ?? 3000}`. — Port 3000 was taken by another local project; run `PORT=3001 STRYDE_API_PORT=3001 bun run dev` then.
 - 2026-10-24: API integration tests run against `<db>_test`, recreated by Vitest global setup; skipped without `DATABASE_URL`. Drizzle migrations are excluded from Biome (generated).
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
@@ -75,7 +91,9 @@ Phase 2 — Local DB & Sync (`plan/phase-02-local-db-sync.md`): **done**, all ac
 - Integration tests: `DATABASE_URL=… bun run test` runs API tests on `<db>_test` and the web convergence test against a real API process on `<db>_web_test` (started by `apps/web/src/test/api-server.ts`). Test timestamps must stay within now + 5 min, or the server clamps them.
 - Own-data writes: `mutate(tables, (w) => …)` in `db/repositories/core.ts`. Pass every table the callback reads or writes. Reads for UI: repository list/get functions wrapped in `useLiveQuery` inside a hook.
 - `requestSync()` (`sync/controller.ts`) syncs immediately: call it after finishing a workout (Phase 4).
-- The dev panel (`features/dev/`) is temporary; remove it once Phase 3/4 screens can create data.
+- The dev panel (`features/dev/`) is temporary; remove it in Phase 4 once workouts can be logged.
+- Phase 4: replace the center Start button's `/templates` link (`features/shell/components/tab-bar.tsx`) with the start sheet; enable the template card's Start (`features/templates/components/template-card.tsx`); use `ExercisePicker` and `templateToSession`.
+- Offline checks in a browser need the route chunks loaded first until the Phase 6 service worker precaches them (code-split routes can't load offline).
 - `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) is where Phase 5 PR recompute and Phases 8–9 feed/notifications go.
 - fontsource imports pull in every subset (cyrillic, greek, vietnamese…). Consider latin/latin-ext-only imports in Phase 6 to keep the SW precache small.
 - Verify `web-push` works under Bun (test planned in Phase 9).
