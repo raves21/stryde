@@ -11,6 +11,7 @@ export default defineConfig({
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
   server: {
-    proxy: { '/api': 'http://localhost:3000' },
+    // Same port as the API's PORT; override when 3000 is taken by something else.
+    proxy: { '/api': `http://localhost:${process.env.STRYDE_API_PORT ?? 3000}` },
   },
 })
