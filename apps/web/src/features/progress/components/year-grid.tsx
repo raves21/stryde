@@ -33,7 +33,7 @@ export function YearGrid({
   return (
     <div className="flex gap-1.5">
       <div
-        className="grid grid-rows-[16px_repeat(7,11px)] gap-[3px] text-[10px] text-faint"
+        className="grid grid-rows-[16px_repeat(7,11px)] gap-[3px] text-[10px] text-muted-foreground"
         aria-hidden
       >
         <span />
@@ -53,7 +53,7 @@ export function YearGrid({
                 key={dayKey(days[0] ?? first)}
                 className="grid grid-rows-[16px_repeat(7,11px)] gap-[3px]"
               >
-                <span className="w-[11px] overflow-visible text-[10px] whitespace-nowrap text-faint">
+                <span className="w-[11px] overflow-visible text-[10px] whitespace-nowrap text-muted-foreground">
                   {firstOfMonth ? format(firstOfMonth, 'MMM') : ''}
                 </span>
                 {days.map((d) => {

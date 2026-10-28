@@ -20,10 +20,10 @@ export type SetPatch = Partial<
 
 /** Column template shared by the header and rows of one card. */
 export function setGridClass(type: ExerciseType, showRir: boolean) {
-  if (type === 'timed') return 'grid-cols-[36px_minmax(0,1fr)_60px_72px_48px]'
+  if (type === 'timed') return 'grid-cols-[36px_minmax(0,1fr)_64px_72px_48px]'
   return showRir
-    ? 'grid-cols-[36px_minmax(0,1fr)_60px_52px_40px_48px]'
-    : 'grid-cols-[36px_minmax(0,1fr)_64px_60px_48px]'
+    ? 'grid-cols-[36px_minmax(0,1fr)_72px_52px_40px_48px]'
+    : 'grid-cols-[36px_minmax(0,1fr)_72px_56px_48px]'
 }
 
 const SWIPE_DELETE_PX = 80

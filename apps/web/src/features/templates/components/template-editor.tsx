@@ -140,7 +140,10 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
         back
         actions={
           <>
-            <span className="tnum flex items-center gap-1 text-sm text-faint" aria-live="polite">
+            <span
+              className="tnum flex items-center gap-1 text-sm text-muted-foreground"
+              aria-live="polite"
+            >
               {state === 'pending' && 'Saving…'}
               {state === 'saved' && (
                 <>

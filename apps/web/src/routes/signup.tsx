@@ -94,7 +94,9 @@ function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <p className="text-sm text-faint">At least {PASSWORD_MIN_LENGTH} characters.</p>
+          <p className="text-sm text-muted-foreground">
+            At least {PASSWORD_MIN_LENGTH} characters.
+          </p>
         </div>
         {error && (
           <p role="alert" className="text-sm text-destructive">

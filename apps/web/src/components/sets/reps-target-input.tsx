@@ -63,7 +63,7 @@ export function RepsTargetInput({
         if (e.key === 'Enter') e.currentTarget.blur()
       }}
       className={cn(
-        'tnum h-[52px] text-center text-lg font-semibold placeholder:text-faint',
+        'tnum h-[52px] text-center text-[length:min(1.125rem,20px)] font-semibold placeholder:text-faint',
         className,
       )}
     />

@@ -22,7 +22,7 @@ export function TemplateStrip({ lastDone }: { lastDone?: Map<string, string> }) 
           <span className="tnum text-sm text-muted-foreground">
             {t.exerciseNames.length} {t.exerciseNames.length === 1 ? 'exercise' : 'exercises'}
           </span>
-          <span className="line-clamp-2 text-xs text-faint">
+          <span className="line-clamp-2 text-xs text-muted-foreground">
             {exercisePreview(t.exerciseNames)}
           </span>
           {lastDone?.get(t.id) && (

@@ -11,7 +11,10 @@ type Props = Omit<ComponentProps<typeof Input>, 'value' | 'onChange' | 'type'> &
   suffix?: string
 }
 
-/** Large, centered, tabular number field; selects all on focus (UI_DESIGN.md §5.4). */
+/**
+ * Large, centered, tabular number field; selects all on focus (UI_DESIGN.md §5.4). Digits
+ * cap at 20px so values fit their fixed-width cells even at 130% text size.
+ */
 export function NumberInput({
   value,
   onValueChange,
@@ -59,13 +62,13 @@ export function NumberInput({
           if (parsed !== undefined) onValueChange(parsed)
         }}
         className={cn(
-          'tnum h-[52px] text-center text-lg font-semibold',
+          'tnum h-[52px] text-center text-[length:min(1.125rem,20px)] font-semibold',
           suffix && 'pr-8',
           className,
         )}
       />
       {suffix && (
-        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-faint uppercase">
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground uppercase">
           {suffix}
         </span>
       )}

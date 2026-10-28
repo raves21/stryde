@@ -100,7 +100,9 @@ function LoginPage() {
             Create an account
           </Link>
         </p>
-        <p className="text-faint">Forgot password? Sign in with Google or contact the admin.</p>
+        <p className="text-muted-foreground">
+          Forgot password? Sign in with Google or contact the admin.
+        </p>
       </div>
     </main>
   )

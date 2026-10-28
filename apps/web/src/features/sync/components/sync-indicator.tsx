@@ -77,7 +77,7 @@ export function SyncIndicator() {
             </p>
           )}
           {lastSyncAt && (
-            <p className="text-sm text-faint">
+            <p className="text-sm text-muted-foreground">
               Last synced {formatDistanceToNow(lastSyncAt, { addSuffix: true })}
             </p>
           )}

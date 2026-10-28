@@ -47,7 +47,7 @@ export function MonthCalendar({
       <div className="grid grid-cols-7 gap-y-1 text-center">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed weekday header
-          <span key={i} className="text-xs text-faint">
+          <span key={i} className="text-xs text-muted-foreground">
             {l}
           </span>
         ))}

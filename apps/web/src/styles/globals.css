@@ -171,3 +171,19 @@
     background-color: var(--accent-dim);
   }
 }
+
+/* Respect reduced motion everywhere (UI_DESIGN.md §2): no sheet slides, pulses or flashes. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must beat component utility classes */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must beat component utility classes */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must beat component utility classes */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must beat component utility classes */
+    scroll-behavior: auto !important;
+  }
+}

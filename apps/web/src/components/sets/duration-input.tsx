@@ -47,7 +47,7 @@ export function DurationInput({
         if (e.key === 'Enter') e.currentTarget.blur()
       }}
       className={cn(
-        'tnum h-[52px] px-1 text-center text-lg font-semibold placeholder:text-faint',
+        'tnum h-[52px] px-1 text-center text-[length:min(1.125rem,20px)] font-semibold placeholder:text-faint',
         className,
       )}
     />

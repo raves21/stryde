@@ -20,7 +20,7 @@ export function WeekStrip({ trained, today = new Date() }: { trained: Set<string
               <span
                 className={cn(
                   'flex size-9 items-center justify-center rounded-full text-sm',
-                  done ? 'bg-brand text-primary-foreground' : 'bg-surface-3 text-faint',
+                  done ? 'bg-brand text-primary-foreground' : 'bg-surface-3 text-muted-foreground',
                   d === todayKey && !done && 'ring-2 ring-foreground/60',
                 )}
               >

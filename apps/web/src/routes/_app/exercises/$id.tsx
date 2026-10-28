@@ -120,7 +120,7 @@ function ExerciseDetail({
         )}
       </div>
       {exercise.defaultRestSeconds !== null && (
-        <p className="tnum -mt-4 text-sm text-faint">
+        <p className="tnum -mt-4 text-sm text-muted-foreground">
           Default rest {formatDuration(exercise.defaultRestSeconds)}
         </p>
       )}
@@ -243,7 +243,7 @@ function ExerciseDetail({
                     .map((set) => (
                       <li
                         key={set.id}
-                        className={set.setType === 'warmup' ? 'text-faint' : undefined}
+                        className={set.setType === 'warmup' ? 'text-muted-foreground' : undefined}
                       >
                         {set.setType === 'warmup' ? 'W ' : ''}
                         {formatSetLine(set, exercise.type, unit)}

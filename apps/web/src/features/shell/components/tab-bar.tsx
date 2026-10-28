@@ -81,7 +81,7 @@ function TabLink({ to, label, icon: Icon }: Tab) {
     <Link
       to={to}
       activeOptions={{ exact: to === '/' }}
-      className="flex h-full flex-col items-center justify-center gap-1 text-faint data-[status=active]:text-brand"
+      className="flex h-full flex-col items-center justify-center gap-1 text-muted-foreground data-[status=active]:text-brand"
     >
       <Icon className="size-6" strokeWidth={1.75} aria-hidden />
       <span className="text-[11px] font-medium">{label}</span>
