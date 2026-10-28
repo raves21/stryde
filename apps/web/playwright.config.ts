@@ -26,11 +26,12 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: `bunx vite --port ${WEB_PORT} --strictPort`,
+      // The production build, so the real service worker is under test.
+      command: `bunx vite build && bunx vite preview --port ${WEB_PORT} --strictPort`,
       url: `http://localhost:${WEB_PORT}`,
       env: { STRYDE_API_PORT: API_PORT },
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 180_000,
     },
   ],
 })

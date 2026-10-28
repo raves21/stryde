@@ -1,25 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
+import { serverWorkouts, signUp } from './helpers'
 
 // PRODUCT_SPEC.md §4.3 / plan/phase-04: start from a template, log sets including a
 // failure set (reps must be typed), finish, and see it on the server; then the same
 // with the device offline, syncing after reconnect.
-
-async function signUp(page: Page) {
-  const id = `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`
-  await page.goto('/signup')
-  await page.getByLabel('Display name').fill('Juan Dela Cruz')
-  await page.getByLabel('Username').fill(`e2e_${id}`)
-  await page.getByLabel('Email').fill(`e2e_${id}@example.com`)
-  await page.getByLabel('Password').fill('correct-horse-battery')
-  // Enabled once the live username check passes.
-  const create = page.getByRole('button', { name: 'Create account' })
-  await expect(create).toBeEnabled()
-  await create.click()
-  await page.getByRole('heading', { name: 'Units' }).waitFor()
-  await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await page.getByRole('button', { name: 'Done' }).click()
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
-}
 
 /** "Bench": set 1 fixed 5 reps @ 60 kg, set 2 to failure. */
 async function createTemplate(page: Page, name: string) {
@@ -70,25 +54,6 @@ async function finish(page: Page) {
   await expect(sheet.getByText('Exercises')).toBeVisible()
   await sheet.getByRole('button', { name: 'Save workout' }).click()
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
-}
-
-type Pulled = { changes: { table: string; row: Record<string, unknown> }[] }
-
-/** The user's finished sessions on the server, each with its completed sets. */
-async function serverWorkouts(page: Page) {
-  const res = await page.request.get('/api/sync/pull?cursor=0')
-  expect(res.ok()).toBe(true)
-  const { changes } = (await res.json()) as Pulled
-  const rows = (t: string) => changes.filter((c) => c.table === t).map((c) => c.row)
-  return rows('sessions')
-    .filter((s) => s.finishedAt && !s.deletedAt)
-    .map((s) => {
-      const ses = rows('sessionExercises').filter((se) => se.sessionId === s.id && !se.deletedAt)
-      const sets = rows('sets').filter(
-        (x) => ses.some((se) => se.id === x.sessionExerciseId) && !x.deletedAt && x.completedAt,
-      )
-      return { name: s.name, sets: sets.map((x) => [x.weightKg, x.reps, x.rir, x.targetKind]) }
-    })
 }
 
 test('log a workout from a template, then again fully offline', async ({ page, context }) => {
