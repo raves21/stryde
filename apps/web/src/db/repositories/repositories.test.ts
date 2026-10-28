@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NewRow } from '@/db/repositories/core'
+import { localDateIn } from '@/lib/dates'
 import { freshDb, signedInDb } from '@/test/local-db'
 import type { StrydeDb } from '../db'
 import { onLocalWrite } from './core'
@@ -9,7 +10,6 @@ import {
   deleteSession,
   finishSession,
   listActiveSessions,
-  localDateIn,
   startSession,
 } from './sessions'
 import { addSet, updateSet } from './sets'

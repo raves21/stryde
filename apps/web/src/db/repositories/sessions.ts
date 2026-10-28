@@ -1,19 +1,9 @@
 import type { SessionExerciseRow, SessionRow } from '@stryde/shared'
+import { localDateIn } from '@/lib/dates'
 import { db as defaultDb, type StrydeDb } from '../db'
 import { mutate, type RowPatch, type Writer } from './core'
 
 const TABLES = ['sessions', 'sessionExercises', 'sets', 'userSettings'] as const
-
-/** `YYYY-MM-DD` of `date` in `timeZone` (the session's calendar day). */
-export function localDateIn(date: Date, timeZone: string): string {
-  // en-CA formats as YYYY-MM-DD.
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date)
-}
 
 /** Start a session. Only one may be active at a time (PRODUCT_SPEC.md §4). */
 export function startSession(

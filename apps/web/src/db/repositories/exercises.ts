@@ -59,3 +59,18 @@ export async function getExercise(id: string, db: StrydeDb = defaultDb) {
   const row = await db.exercises.get(id)
   return row && !row.deletedAt ? row : undefined
 }
+
+/** Exercise ids from the most recent sessions, newest first, without duplicates. */
+export async function listRecentExerciseIds(
+  limit = 5,
+  db: StrydeDb = defaultDb,
+): Promise<string[]> {
+  const recent = await db.sessionExercises.orderBy('id').reverse().limit(200).toArray()
+  const ids: string[] = []
+  for (const se of recent) {
+    if (se.deletedAt || ids.includes(se.exerciseId)) continue
+    ids.push(se.exerciseId)
+    if (ids.length === limit) break
+  }
+  return ids
+}
