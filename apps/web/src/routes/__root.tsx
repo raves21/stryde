@@ -2,6 +2,7 @@ import { createRootRoute, Outlet, redirect, useRouter } from '@tanstack/react-ro
 import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { resolveSession, revalidateSession } from '@/features/auth/session'
+import { UpdatePrompt } from '@/features/pwa/components/update-prompt'
 import { SyncRuntime } from '@/features/sync/sync-runtime'
 
 const PUBLIC_PATHS = new Set(['/login', '/signup'])
@@ -56,6 +57,7 @@ function RootLayout() {
         <Outlet />
       )}
       <Toaster position="top-center" />
+      <UpdatePrompt />
     </div>
   )
 }
