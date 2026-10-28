@@ -1,6 +1,6 @@
 import type { SessionRow } from '@stryde/shared'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { getMeta } from '@/db/meta'
+import { getMeta, setMeta } from '@/db/meta'
 import { getActiveSession, getSessionTree, type SessionTree } from '@/db/repositories/sessions'
 
 /** The active workout, null when none (undefined while loading). */
@@ -19,4 +19,8 @@ export function useKeepScreenOn(): boolean {
     [],
     true,
   )
+}
+
+export async function setKeepScreenOn(on: boolean) {
+  await setMeta('settings.keepScreenOn', on)
 }

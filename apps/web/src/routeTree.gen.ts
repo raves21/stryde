@@ -21,6 +21,8 @@ import { Route as AppProgressRouteImport } from './routes/_app/progress'
 import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
 import { Route as AppExercisesIndexRouteImport } from './routes/_app/exercises/index'
 import { Route as AppExercisesIdRouteImport } from './routes/_app/exercises/$id'
+import { Route as AppSettingsInstallRouteImport } from './routes/_app/settings/install'
+import { Route as AppSettingsSyncRouteImport } from './routes/_app/settings/sync'
 import { Route as AppTemplatesIndexRouteImport } from './routes/_app/templates/index'
 import { Route as AppTemplatesIdRouteImport } from './routes/_app/templates/$id'
 import { Route as AppTemplatesNewRouteImport } from './routes/_app/templates/new'
@@ -86,6 +88,16 @@ const AppExercisesIdRoute = AppExercisesIdRouteImport.update({
   path: '/exercises/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsInstallRoute = AppSettingsInstallRouteImport.update({
+  id: '/settings/install',
+  path: '/settings/install',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsSyncRoute = AppSettingsSyncRouteImport.update({
+  id: '/settings/sync',
+  path: '/settings/sync',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTemplatesIndexRoute = AppTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
@@ -123,6 +135,8 @@ export interface FileRoutesByFullPath {
   '/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/exercises/$id': typeof AppExercisesIdRoute
+  '/settings/install': typeof AppSettingsInstallRoute
+  '/settings/sync': typeof AppSettingsSyncRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
@@ -141,6 +155,8 @@ export interface FileRoutesByTo {
   '/workout/active': typeof WorkoutActiveRoute
   '/': typeof AppIndexRoute
   '/exercises/$id': typeof AppExercisesIdRoute
+  '/settings/install': typeof AppSettingsInstallRoute
+  '/settings/sync': typeof AppSettingsSyncRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
@@ -161,6 +177,8 @@ export interface FileRoutesById {
   '/workout/active': typeof WorkoutActiveRoute
   '/_app/': typeof AppIndexRoute
   '/_app/exercises/$id': typeof AppExercisesIdRoute
+  '/_app/settings/install': typeof AppSettingsInstallRoute
+  '/_app/settings/sync': typeof AppSettingsSyncRoute
   '/_app/templates/$id': typeof AppTemplatesIdRoute
   '/_app/templates/new': typeof AppTemplatesNewRoute
   '/workout/$sessionId/edit': typeof WorkoutSessionIdEditRoute
@@ -181,6 +199,8 @@ export interface FileRouteTypes {
     | '/progress'
     | '/workout/active'
     | '/exercises/$id'
+    | '/settings/install'
+    | '/settings/sync'
     | '/templates/$id'
     | '/templates/new'
     | '/workout/$sessionId/edit'
@@ -199,6 +219,8 @@ export interface FileRouteTypes {
     | '/workout/active'
     | '/'
     | '/exercises/$id'
+    | '/settings/install'
+    | '/settings/sync'
     | '/templates/$id'
     | '/templates/new'
     | '/workout/$sessionId/edit'
@@ -218,6 +240,8 @@ export interface FileRouteTypes {
     | '/workout/active'
     | '/_app/'
     | '/_app/exercises/$id'
+    | '/_app/settings/install'
+    | '/_app/settings/sync'
     | '/_app/templates/$id'
     | '/_app/templates/new'
     | '/workout/$sessionId/edit'
@@ -322,6 +346,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppExercisesIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/install': {
+      id: '/_app/settings/install'
+      path: '/settings/install'
+      fullPath: '/settings/install'
+      preLoaderRoute: typeof AppSettingsInstallRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/sync': {
+      id: '/_app/settings/sync'
+      path: '/settings/sync'
+      fullPath: '/settings/sync'
+      preLoaderRoute: typeof AppSettingsSyncRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/templates/': {
       id: '/_app/templates/'
       path: '/templates'
@@ -367,6 +405,8 @@ interface AppRouteChildren {
   AppProgressRoute: typeof AppProgressRoute
   AppIndexRoute: typeof AppIndexRoute
   AppExercisesIdRoute: typeof AppExercisesIdRoute
+  AppSettingsInstallRoute: typeof AppSettingsInstallRoute
+  AppSettingsSyncRoute: typeof AppSettingsSyncRoute
   AppTemplatesIdRoute: typeof AppTemplatesIdRoute
   AppTemplatesNewRoute: typeof AppTemplatesNewRoute
   AppExercisesIndexRoute: typeof AppExercisesIndexRoute
@@ -380,6 +420,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppProgressRoute: AppProgressRoute,
   AppIndexRoute: AppIndexRoute,
   AppExercisesIdRoute: AppExercisesIdRoute,
+  AppSettingsInstallRoute: AppSettingsInstallRoute,
+  AppSettingsSyncRoute: AppSettingsSyncRoute,
   AppTemplatesIdRoute: AppTemplatesIdRoute,
   AppTemplatesNewRoute: AppTemplatesNewRoute,
   AppExercisesIndexRoute: AppExercisesIndexRoute,

@@ -6,10 +6,13 @@ export function NavRow({
   to,
   icon: Icon,
   label,
+  detail,
 }: {
   to: LinkProps['to']
   icon: LucideIcon
   label: string
+  /** Short status on the right (e.g. "3 pending"). */
+  detail?: string
 }) {
   return (
     <Link
@@ -18,6 +21,7 @@ export function NavRow({
     >
       <Icon className="size-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
       <span className="flex-1 font-medium">{label}</span>
+      {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
       <ChevronRight className="size-5 text-faint" aria-hidden />
     </Link>
   )
