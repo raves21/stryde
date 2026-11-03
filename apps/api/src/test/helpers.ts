@@ -16,6 +16,19 @@ export function postJson(path: string, body: unknown, cookie?: string) {
   })
 }
 
+/** PUT/DELETE (and other methods) with an optional JSON body. */
+export function request(method: string, path: string, cookie?: string, body?: unknown) {
+  return app.request(path, {
+    method,
+    headers: {
+      Origin: ORIGIN,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(cookie ? { Cookie: cookie } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+}
+
 export function get(path: string, cookie?: string) {
   return app.request(path, { headers: { Origin: ORIGIN, ...(cookie ? { Cookie: cookie } : {}) } })
 }

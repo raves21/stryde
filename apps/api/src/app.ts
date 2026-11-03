@@ -1,8 +1,11 @@
 import { Hono } from 'hono'
 import { auth } from './auth'
 import { env } from './env'
+import { feedRoute } from './routes/feed'
+import { friendsRoute } from './routes/friends'
 import { healthRoute } from './routes/health'
 import { meRoute } from './routes/me'
+import { sessionsRoute } from './routes/sessions'
 import { syncRoute } from './routes/sync'
 import { usersRoute } from './routes/users'
 import { serveSpa } from './static'
@@ -15,6 +18,9 @@ const api = new Hono()
   .route('/me', meRoute)
   .route('/users', usersRoute)
   .route('/sync', syncRoute)
+  .route('/friends', friendsRoute)
+  .route('/feed', feedRoute)
+  .route('/sessions', sessionsRoute)
 
 /** The API plus, in the Docker image, the built SPA on the same origin. */
 export function createApp(staticDir = env.staticDir) {
