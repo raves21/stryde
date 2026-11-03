@@ -74,7 +74,7 @@ jobs:
       APP_URL: ${{ vars.APP_URL || 'https://stryde.obnsolutions.org' }}
     steps:
       - name: Join ZeroTier
-        uses: zerotier/github-action@v1.0.1
+        uses: zerotier/github-action@v1.0.3
         with:
           network_id: ${{ secrets.ZEROTIER_NETWORK_ID }}
           auth_token: ${{ secrets.ZEROTIER_CENTRAL_TOKEN }}
