@@ -42,7 +42,7 @@ bun run e2e                                                           # Playwrig
 - **Test timestamps** pushed to the server must be within now + 5 min or the server clamps them (LWW clock-skew rule).
 - **Playwright:** `getByRole('button', { name: 'Continue' })` also matches "Continue with Google"; use `exact: true`. Single-select `ToggleGroup` items have role `radio`. Preset names: "Dip" (not "Dips"), "Bench Press", "Pull-up", "Plank".
 - **Stitch MCP** (owner's design mockups, project `11389384382127711649`) returns metadata only; screenshots/HTML need auth the shell doesn't have. The mockups use the volt accent like the code; `UI_DESIGN.md` wins for visuals.
-- **gh CLI is not installed**; read GitHub Actions status with WebFetch on the public Actions pages (step logs need sign-in, so ask the owner to paste them).
+- **gh CLI** is installed and logged in; use `gh run view <id> --log-failed` for Actions logs (very old job logs may come back empty; the step list still shows which step failed).
 
 ## Code map (what to reuse)
 
