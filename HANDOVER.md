@@ -4,15 +4,15 @@ Context for the next session working on Stryde. Read this first, then `PROGRESS.
 
 ## Where things stand (2026-11-03)
 
-- **Phases 0–7 are implemented** (v1 feature-complete): auth, local-first sync, exercises/templates, active workout, history/calendar/charts/PRs, PWA (offline cold start, install, safe updates), Docker + CI/CD + deploy guide.
+- **Phases 0–8 are implemented**: v1 (auth, local-first sync, exercises/templates, active workout with inline PR chip, history/calendar/charts/PRs, PWA, Docker + CI/CD + deploy guide) plus Phase 8 social (friends, feed, reactions; online-only via TanStack Query). Phase 8 is built and tested locally but not pushed or deployed yet.
 - **Phase 7 acceptance is blocked on the owner**, not on code. `main` was pushed; **CI #1 passed** on GitHub; **Deploy #1 failed** in the `deploy` job after ~20 s (the `build` job ran ~2 min, so the image is most likely in GHCR). Most likely cause: no secrets set yet. Logs need a signed-in look: https://github.com/raves21/stryde/actions/runs/40649038374
 - The owner's remaining steps are in **`docs/owner-checklist.md`** (server, deploy key, GitHub secrets, Cloudflare, first deploy, rollback test, phone installs, Google OAuth). Full instructions: `docs/deploy-home-server.md`.
 - Local `main` is **1 commit ahead** of `origin/main` (`3fb7cca`, a `PROGRESS.md` update), plus this file. Push only when the owner asks.
-- **Next:** help the owner get the first deploy green (fix the workflow if their logs show a real bug), then Phase 8 (social, v2) once they say go. Don't start v2 early (`CLAUDE.md`).
+- **Next:** help the owner get the first deploy green (the failure is missing GitHub secrets, see `BLOCKERS.md`), and Phase 9 (notifications) when they say go. Phase 9 needs HTTPS, VAPID keys and a real phone, so it is partly blocked by the deploy.
 
 ## Open decisions (ask the owner)
 
-1. **When to start Phase 8.**
+1. **When to start Phase 9** (and whether to push/deploy Phase 8 before it).
 2. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
 
 ## Running it
@@ -27,7 +27,7 @@ bun run e2e                                                           # Playwrig
 
 - **Port 3000 is taken** on this machine by the owner's ticketing Nuxt dev server (`~/code_projects/frontend/vue/ticketing-client`). Don't stop it; run the Stryde API on 3001 as above. The ticketing project's Postgres has also held port 5432 before; if the Stryde DB container isn't running, ask before touching the other project.
 - Local dev accounts from browser checks all use the password `correct-horse-battery`: `p5_mvrnykhd` (6 workouts over 10 weeks, good for charts), `p4_mvrk2ixr` (template + 2 workouts), `p3_mvrj78az` (template with a superset).
-- Last full run: 291 unit/integration tests + 3 e2e green, lint and typecheck clean.
+- Last full run: 310 unit/integration tests + 4 e2e green, lint and typecheck clean.
 
 ## Gotchas learned the hard way
 
@@ -46,7 +46,8 @@ bun run e2e                                                           # Playwrig
 ## Code map (what to reuse)
 
 - `packages/shared/src/` — `schemas/` (row + sync payload Zod), `calc/` (e1RM, volume, best set, `detectPRs`, `prTimeline`, `computeAllPRs`, `seriesForChart`), `units.ts`, `constants.ts`.
-- `apps/api/src/` — `app.ts` (`createApp(staticDir)`: API + SPA static serving), `services/sync.ts` (push/pull), `services/session-effects.ts` (`onSessionsChanged` → PR recompute; Phase 8–9 feed/notifications go here), `static.ts`, `db/migrations/0001_sync_infra.sql` (hand-written, never regenerate).
+- `apps/api/src/` — `app.ts` (`createApp(staticDir)`: API + SPA static serving), `services/sync.ts` (push/pull), `services/session-effects.ts` (`onSessionsChanged` → PR recompute + feed events; Phase 9 notifications go through `services/notify.ts`), `services/friends.ts` / `access.ts` / `feed.ts` / `reactions.ts` / `session-detail.ts` (Phase 8), `static.ts`, `db/migrations/0001_sync_infra.sql` (hand-written, never regenerate).
+- `apps/web/src/features/social/` — Phase 8 UI: `api.ts` (fetch + `ApiError`), `use-social.ts` (TanStack Query hooks, optimistic `useReact`), `reactions.ts` (`toggleReaction`), components (feed card, reaction bar/picker, friend rows, friend session detail). The query client (`lib/query-client.ts`) is in-memory only.
 - `apps/web/src/` —
   - `db/repositories/` the only write path for own data (`core.ts`: `mutate`/`Writer`; `supersets.ts`; sessions/templates/exercises/sets/settings). Build new rows from the DB inside the transaction, never from screen state.
   - `sync/` engine (pure), controller (triggers, backoff, Web Lock), status store, hooks.

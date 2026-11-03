@@ -74,7 +74,7 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 
 ## 8. Decisions I need from you
 
-- [ ] **Phase 8 (social: friends, feed, reactions)**: start it once v1 is deployed, or wait?
+- [ ] **Phase 9 (notifications)**: start it? It needs HTTPS, VAPID keys on the server and a real phone, so full testing waits for the first deploy. (Phase 8, social, is built and tested locally; it ships with the next push.)
 
 ## Notes
 

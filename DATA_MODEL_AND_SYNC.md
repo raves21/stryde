@@ -212,15 +212,15 @@ Social data is fetched with TanStack Query using the default **in-memory** cache
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/feed?before=<cursor>&limit=20` | feed events of self + accepted friends, non-hidden, with actor profile, session name, duration, counts, PRs, reaction counts, my reaction |
-| `GET /api/sessions/:id` | full session detail if owner or (friend and shared) — includes exercise names (also for friends' custom exercises) |
+| `GET /api/feed?before=<cursor>&limit=20` | feed events of self + accepted friends, non-hidden, newest finish first, with actor profile, session name, duration, exercise/set counts (completed working sets), PRs, reaction counts, my reaction. `nextCursor` is opaque (`<createdAt>\|<event id>`); `null` on the last page |
+| `GET /api/sessions/:id` | full session detail (completed sets only) if owner or (friend and shared and finished and not deleted), else 404 — includes exercise names (also for friends' custom exercises), the stored PR summary and reactions |
 | `GET /api/sessions/:id/reactions` | list of reactors |
 | `PUT /api/sessions/:id/reaction` `{ emoji }`, `DELETE /api/sessions/:id/reaction` | set/replace or remove my reaction |
-| `GET /api/friends`, `GET /api/friends/requests` | lists |
+| `GET /api/friends`, `GET /api/friends/requests` | friends with `lastWorkoutAt` and my `muted` flag; requests as `{ incoming, outgoing }` (each with the other user's `userId`) |
 | `POST /api/friends/requests` `{ username }` | send |
-| `POST /api/friends/requests/:id/accept` / `decline`, `DELETE /api/friends/:userId` | |
+| `POST /api/friends/requests/:id/accept` / `decline`, `DELETE /api/friends/:userId` | accept/decline only by the addressee of a pending request (else 404). `DELETE` removes a friend, or cancels my own pending request, and drops mutes between the two. A request to someone who already asked me accepts it; a declined pair can ask again |
 | `PUT/DELETE /api/friends/:userId/mute` | |
-| `GET /api/users/search?q=` | exact/prefix username match, max 10 |
+| `GET /api/users/search?q=` | prefix username match, max 10, never the caller. Returns only `username`, `displayName`, `avatarUrl` plus my `relation` to them (`none\|friend\|outgoing\|incoming`) |
 | `GET /api/notifications`, `POST /api/notifications/read` | in-app list |
 | `POST /api/push/subscribe`, `DELETE /api/push/subscribe` | Web Push subscriptions |
 | `POST /api/rest-timer` `{ sessionId, fireAt }`, `DELETE /api/rest-timer` | schedule/cancel rest push |

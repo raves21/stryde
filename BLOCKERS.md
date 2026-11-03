@@ -50,9 +50,9 @@ Needs a Google Cloud OAuth client (web application) with the origins and redirec
 
 ## 6. Decisions waiting on the owner
 
-- [ ] **Phase 8 (social, v2)**: start once v1 is deployed, or wait?
+- [ ] **Phase 9 (notifications, v2)**: start it? It needs HTTPS, VAPID keys on the server and a real phone, so it can't be fully tested before the first deploy.
 
 ## Housekeeping (not blocking)
 
-- Pushed 2026-11-03 (backup script, ZeroTier bump, inline PR chip). Deploy will fail at "Join ZeroTier" again until blocker 1 is fixed; CI should pass.
+- Phase 8 (social) is built and tested locally but not pushed. Pushed 2026-11-03: backup script, ZeroTier bump, inline PR chip. Deploy will fail at "Join ZeroTier" again until blocker 1 is fixed; CI should pass.
 - The ZeroTier action is now `@v1.0.3`. Its post step (`util/post@main`) still targets an old Node runtime, so the deprecation warning stays; GitHub forces it onto Node 24 and it doesn't fail the run.

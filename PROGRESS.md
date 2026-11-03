@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`): **implemented, verified locally, pushed** (`main` = `origin/main` at `da9b322`). CI #1 passed on GitHub; Deploy #1 failed in the `deploy` job after ~20 s (the `build` job ran ~2 min, so the image is most likely in GHCR). The failing step needs a signed-in look at https://github.com/raves21/stryde/actions/runs/40649038374; most likely the secrets aren't set yet. Remaining: owner setup in `docs/owner-checklist.md`. After that, **v1 is complete**; Phase 8 (social, v2) is next.
+Phase 8 — Social: Friends, Feed, Reactions (`plan/phase-08-social.md`): **implemented and verified locally** (v2, built ahead of the first deploy). Phase 7 (deploy) is implemented but its acceptance is blocked on the owner: Deploy fails at "Join ZeroTier" because the repo has no secrets yet (`BLOCKERS.md`, `docs/owner-checklist.md`). Next: Phase 9 (notifications) once the owner says go; it needs HTTPS, VAPID keys and real devices, so it is partly blocked by the deploy.
 (Phase 1 still has one owner-verification item: real Google sign-in.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -76,6 +76,13 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
   - [x] Audit: Chrome installability check (CDP `Page.getInstallabilityErrors`) clean, manifest valid, no console errors; Lighthouse mobile: Performance 85, Accessibility 96 → contrast fix, Best practices 96, CLS 0; global `prefers-reduced-motion` rule; 130% text: set-row inputs no longer clip (weight column 72px, digits capped at 20px)
   - [x] E2E now runs against the production build; new `e2e/offline.spec.ts`: load online → offline → reload → Today + a never-opened route render → log and finish a workout → online → synced
 
+- [x] Phase 8 — Social: Friends, Feed, Reactions (v2)
+  - [x] Shared (`schemas/social.ts`): Zod request schemas (friend request, reaction, feed query, user search) + response types (`FeedItem`, `SessionDetail`, `Friend`, …)
+  - [x] API: `services/friends.ts` (search, request/auto-accept/decline/cancel/remove, mute, lists), `services/access.ts` `canViewSession` (owner, or accepted friend + shared + finished + not deleted; otherwise 404), `services/feed.ts` (cursor pagination, counts and reactions in a few queries per page), `services/session-detail.ts`, `services/reactions.ts`; routes `/api/friends`, `/api/feed`, `/api/sessions/:id[/reaction[s]]`, `/api/users/search`
+  - [x] `onSessionsChanged` now creates/updates/hides feed events (`createdAt = finishedAt`, unshare/delete hides, reshare unhides with no notification), stores the per-session PR summary from `prTimeline` and refreshes the summaries of other sessions sharing a touched exercise; `services/notify.ts` is a no-op stub for Phase 9
+  - [x] Web: TanStack Query (in-memory, no persister; cleared on sign-in/out), `/feed` (infinite scroll, pull-to-refresh, skeletons, empty/offline/error states, friends shortcut with request badge), `/friends` (search, Friends/Requests tabs, mute/remove, accept/decline/cancel), friend view on `/workout/$sessionId` (read-only, PR cards, reactions) when the session isn't on this device, `ReactionBar`/`ReactionPicker`/`ReactorsSheet` with optimistic updates and rollback, Profile → Friends
+  - [x] Tests: API integration (friend flows, 404 authorization matrix, feed contents/order/pagination/late sync/unshare/unfriend/PR refresh, reactions), `toggleReaction`, e2e with two users (request → accept → workout → feed → react → friend detail → offline state)
+
 - [x] Phase 7 — Docker, CI/CD & Home Server Deploy (implemented)
   - [x] API serves the built SPA when `STATIC_DIR` is set (`apps/api/src/static.ts`): files with cache headers (hashed `/assets` immutable, `index.html`/`sw.js`/manifest/`registerSW.js` no-cache), SPA fallback for extension-less paths, 404 for missing files (never HTML as JS), path-traversal guard, HEAD; `createApp(staticDir)`; 10 tests
   - [x] `docker/Dockerfile`: multi-stage on `oven/bun:1.3.14-alpine` (web build with `GIT_SHA`, API-only production deps, non-root `bun`, `HEALTHCHECK` on `/api/health`, `EXPOSE 3000`); `.dockerignore`
@@ -143,6 +150,15 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
 - 2026-10-28: Charts: weighted = e1RM / Best set (top-set weight) / Volume; bodyweight = Max reps / Total reps / e1RM (added weight); timed = Duration. PR dots: e1RM↔e1rm, Best set↔weight, Volume↔volume, Max reps↔max_reps, Duration↔duration; Total reps has none.
 - 2026-10-28: Headline delta compares the latest session's value with the latest one at least 90 days old; hidden when there is none. Weeks start Monday; stats use session `localDate`s.
 - 2026-10-28: `feed_events.prs` isn't written yet: feed events are created in Phase 8, which can call the same timeline.
+- 2026-11-03: Phase 8 built before the first deploy, at the owner's go. Deploying it is separate: v1 hasn't run on the server yet.
+- 2026-11-03: `canViewSession` treats an unfinished or deleted session as invisible even to its owner on the API; owners read those from their own device. Unauthorized and unknown ids are both 404, malformed ids too.
+- 2026-11-03: User search returns the public profile plus my `relation` to each result (none/friend/outgoing/incoming) so the UI can show Add / Requested / Friends. Nothing else about them is revealed.
+- 2026-11-03: `DELETE /api/friends/:userId` also cancels my own pending request (and removes mutes); a request to someone who already asked me accepts theirs; a declined pair can ask again (the row is reused). Declined requests stay invisible to the requester.
+- 2026-11-03: Feed event PRs (`feed_events.prs`) are the PRs achieved *in that session* (`prTimeline` over the owner's whole history, not just current records), refreshed for other sessions when a push touches a shared exercise. Session volume PRs are stored too; the feed shows a count and lists them on tap.
+- 2026-11-03: Cursor pagination uses `<createdAt ISO>|<event id>` so events finishing in the same millisecond don't drop out between pages.
+- 2026-11-03: The friend view lives on `/workout/$sessionId`: if the session isn't in Dexie the page fetches `/api/sessions/:id`. Own sessions always render from Dexie, also when tapped from the feed.
+- 2026-11-03: Reacting to your own session is allowed by the API (`canViewSession` includes the owner), and the feed card shows the React button on your own cards too, so you can see who reacted.
+- 2026-11-03: Pull-to-refresh is a small touch handler on the feed (no library); it never blocks native scrolling. SSE `feed` hints to friends stay in Phase 9.
 ## Open questions
 - Google OAuth: create a Google Cloud OAuth client (authorized origin `http://localhost:5173` for dev, redirect URI `http://localhost:5173/api/auth/callback/google`), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the API env, and try "Continue with Google" to tick the last Phase 1 acceptance item.
 - Install on real devices (owner): Android Chrome → Profile → Install app (or the browser's install prompt); iPhone Safari → Share → Add to Home Screen, from `https://stryde.obnsolutions.org` after the first deploy. Chromium's installability check is clean (also against the production image).
@@ -161,7 +177,7 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
 - `requestSync()` (`sync/controller.ts`) syncs immediately (used after finishing a workout and by the indicator's Retry); Settings → "Sync now" (Phase 6) should call it too.
 - Vite dev may reload once the first time a newly used dependency is imported (e.g. recharts); harmless, but browser scripts should allow for it.
 - Offline checks in `bun run dev` still need route chunks loaded first (no service worker in dev); use the production build (`bun run e2e`, or `vite build && vite preview`) for real offline behaviour.
-- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5); feed events, notifications and SSE hints (Phases 8–9) go there too.
+- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5) and maintains feed events (Phase 8); notifications (`services/notify.ts`, currently a no-op) and SSE hints (Phase 9) go there too.
 - `bun run e2e` (Playwright, `apps/web/e2e/`) needs the dev Postgres; it uses `<db>_e2e` and ports 3100/5180. First run on a machine: `cd apps/web && bunx playwright install chromium`.
 - Local port clash: if 3000 is taken (e.g. another project's dev server), run `PORT=3001 STRYDE_API_PORT=3001 bun run dev`.
 - Verify `web-push` works under Bun (test planned in Phase 9).
