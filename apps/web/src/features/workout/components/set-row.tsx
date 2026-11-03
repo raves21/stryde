@@ -9,6 +9,7 @@ import {
 import { Check } from 'lucide-react'
 import { type PointerEvent, useRef, useState } from 'react'
 import { NumberInput } from '@/components/app/number-input'
+import { PRBadge } from '@/components/app/pr-badge'
 import { DurationInput } from '@/components/sets/duration-input'
 import { SetBadge } from '@/components/sets/set-badge'
 import { cn } from '@/lib/utils'
@@ -44,6 +45,7 @@ export function SetRow({
   onOpenOptions,
   onCopyPrevious,
   onDelete,
+  prLabel,
 }: {
   set: SetRowData
   /** Working-set number (warm-ups show W). */
@@ -57,6 +59,8 @@ export function SetRow({
   onOpenOptions: () => void
   onCopyPrevious: () => void
   onDelete: () => void
+  /** Gold chip under a completed set that is a PR, e.g. "e1RM PR". */
+  prLabel?: string
 }) {
   const label = set.setType === 'warmup' ? 'Warm-up set' : `Set ${number}`
   const completed = set.completedAt !== null
@@ -199,6 +203,9 @@ export function SetRow({
         >
           <Check className="size-6" strokeWidth={completed ? 3 : 2} />
         </button>
+        {completed && prLabel && (
+          <PRBadge label={prLabel} className="col-span-full -mt-0.5 mb-1 ml-1 justify-self-start" />
+        )}
       </fieldset>
     </div>
   )

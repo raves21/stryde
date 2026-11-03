@@ -74,7 +74,6 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 
 ## 8. Decisions I need from you
 
-- [ ] **Inline PR hint during a workout** (`UI_DESIGN.md` §5.4: a gold 🏆 "e1RM PR" chip on a just-completed set). Should I build it, or drop it from the design? PRs already show on the finish sheet, session detail, records and charts.
 - [ ] **Phase 8 (social: friends, feed, reactions)**: start it once v1 is deployed, or wait?
 
 ## Notes

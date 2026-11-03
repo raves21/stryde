@@ -23,6 +23,7 @@ import { ExercisePicker } from '@/features/exercises/components/exercise-picker'
 import { EQUIPMENT_LABELS, MUSCLE_GROUP_LABELS, REST_OPTIONS } from '@/features/exercises/labels'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/workout'
+import { useSetPRHints } from '../use-set-pr-hints'
 import type { WorkoutActions } from '../use-workout-actions'
 import { SetRow, setGridClass } from './set-row'
 
@@ -36,6 +37,7 @@ export function WorkoutExerciseCard({
   isFirst,
   isLast,
   actions,
+  showPRHints,
 }: {
   item: Item
   supersetLabel: string | null
@@ -43,8 +45,11 @@ export function WorkoutExerciseCard({
   isFirst: boolean
   isLast: boolean
   actions: WorkoutActions
+  /** Inline PR chips on completed sets (only while the workout is in progress). */
+  showPRHints: boolean
 }) {
   const { row, exercise, sets, previous } = item
+  const prHints = useSetPRHints(exercise, row.exerciseId, row.sessionId, sets, showPRHints)
   const [optionsFor, setOptionsFor] = useState<string | null>(null)
   const [replacing, setReplacing] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -182,6 +187,7 @@ export function WorkoutExerciseCard({
                 onOpenOptions={() => setOptionsFor(set.id)}
                 onCopyPrevious={() => prev && actions.copyPrevious(item, set, prev)}
                 onDelete={() => actions.deleteSet(set)}
+                prLabel={prHints.get(set.id)}
               />
             )
           })}

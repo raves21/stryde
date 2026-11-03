@@ -39,6 +39,7 @@ export function WorkoutBody({ tree, actions }: { tree: SessionTree; actions: Wor
             isFirst={index === 0}
             isLast={index === tree.exercises.length - 1}
             actions={actions}
+            showPRHints={tree.session.finishedAt === null}
           />
         ))}
       </div>

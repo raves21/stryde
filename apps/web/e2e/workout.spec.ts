@@ -108,3 +108,22 @@ test('log a workout from a template, then again fully offline', async ({ page, c
   await expect(page.getByRole('button', { name: 'Synced' })).toBeVisible({ timeout: 20_000 })
   await expect.poll(() => serverWorkouts(page)).toHaveLength(2)
 })
+
+// UI_DESIGN.md §5.4: a just-completed set that beats earlier workouts gets a gold chip;
+// the first workout of an exercise is the baseline and gets none.
+test('a set that beats the previous workout shows the PR chip', async ({ page }) => {
+  await signUp(page)
+  await createTemplate(page, 'Push Day')
+
+  await startFromTemplate(page, 'Push Day')
+  await logSets(page)
+  await expect(page.getByText('e1RM PR')).toHaveCount(0)
+  await finish(page)
+
+  await startFromTemplate(page, 'Push Day')
+  const set1 = page.getByRole('group', { name: 'Set 1' })
+  await set1.getByLabel('Set 1 weight in kg').fill('65')
+  await expect(page.getByText('e1RM PR')).toHaveCount(0)
+  await set1.getByRole('button', { name: 'Complete set 1' }).click()
+  await expect(set1.getByText('e1RM PR')).toBeVisible()
+})

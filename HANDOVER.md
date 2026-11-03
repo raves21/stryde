@@ -12,9 +12,8 @@ Context for the next session working on Stryde. Read this first, then `PROGRESS.
 
 ## Open decisions (ask the owner)
 
-1. **Inline PR hint during a workout** (`UI_DESIGN.md` §5.4: gold 🏆 "e1RM PR" chip on a just-completed set): build it or drop it? Not built yet; PRs show on the finish sheet, session detail, records and charts. If built: `detectPRs` against `getExerciseHistory` (both exist).
-2. **When to start Phase 8.**
-3. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
+1. **When to start Phase 8.**
+2. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
 
 ## Running it
 
@@ -28,7 +27,7 @@ bun run e2e                                                           # Playwrig
 
 - **Port 3000 is taken** on this machine by the owner's ticketing Nuxt dev server (`~/code_projects/frontend/vue/ticketing-client`). Don't stop it; run the Stryde API on 3001 as above. The ticketing project's Postgres has also held port 5432 before; if the Stryde DB container isn't running, ask before touching the other project.
 - Local dev accounts from browser checks all use the password `correct-horse-battery`: `p5_mvrnykhd` (6 workouts over 10 weeks, good for charts), `p4_mvrk2ixr` (template + 2 workouts), `p3_mvrj78az` (template with a superset).
-- Last full run: 283 unit/integration tests + 2 e2e green, lint and typecheck clean.
+- Last full run: 291 unit/integration tests + 3 e2e green, lint and typecheck clean.
 
 ## Gotchas learned the hard way
 

@@ -50,7 +50,6 @@ Needs a Google Cloud OAuth client (web application) with the origins and redirec
 
 ## 6. Decisions waiting on the owner
 
-- [ ] **Inline PR hint during a workout** (`UI_DESIGN.md` §5.4, gold 🏆 "e1RM PR" chip): build it or drop it?
 - [ ] **Phase 8 (social, v2)**: start once v1 is deployed, or wait?
 
 ## Housekeeping (not blocking)

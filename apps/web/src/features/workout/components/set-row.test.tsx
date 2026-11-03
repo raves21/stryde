@@ -25,7 +25,11 @@ const base: SetRowData = {
   completedAt: null,
 }
 
-function renderRow(set: Partial<SetRowData>, type: 'weighted' | 'timed' = 'weighted') {
+function renderRow(
+  set: Partial<SetRowData>,
+  type: 'weighted' | 'timed' = 'weighted',
+  prLabel?: string,
+) {
   const onToggleComplete = vi.fn()
   const onChange = vi.fn()
   render(
@@ -41,6 +45,7 @@ function renderRow(set: Partial<SetRowData>, type: 'weighted' | 'timed' = 'weigh
       onOpenOptions={() => {}}
       onCopyPrevious={() => {}}
       onDelete={() => {}}
+      prLabel={prLabel}
     />,
   )
   return {
@@ -81,6 +86,14 @@ describe('SetRow', () => {
     expect(disabled(renderRow({ reps: null, durationSec: null }, 'timed').check)).toBe(true)
     cleanup()
     expect(disabled(renderRow({ reps: null, durationSec: 60 }, 'timed').check)).toBe(false)
+  })
+
+  it('shows the PR chip only on a completed set', () => {
+    renderRow({ completedAt: '2026-10-28T10:05:00.000Z' }, 'weighted', 'e1RM PR')
+    expect(screen.getByText('e1RM PR')).toBeTruthy()
+    cleanup()
+    renderRow({ completedAt: null }, 'weighted', 'e1RM PR')
+    expect(screen.queryByText('e1RM PR')).toBeNull()
   })
 
   it('typing reps on a failure set reports them', async () => {
