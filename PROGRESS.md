@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`): **implemented and verified locally**; the remaining acceptance items need the owner (push to GitHub, secrets, server + Cloudflare setup per `docs/deploy-home-server.md`). After that, **v1 is complete**; Phase 8 (social, v2) is next.
+Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`): **implemented, verified locally, pushed** (`main` = `origin/main` at `da9b322`). CI #1 passed on GitHub; Deploy #1 failed in the `deploy` job after ~20 s (the `build` job ran ~2 min, so the image is most likely in GHCR). The failing step needs a signed-in look at https://github.com/raves21/stryde/actions/runs/40649038374; most likely the secrets aren't set yet. Remaining: owner setup in `docs/owner-checklist.md`. After that, **v1 is complete**; Phase 8 (social, v2) is next.
 (Phase 1 still has one owner-verification item: real Google sign-in.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -84,7 +84,8 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
   - [x] `.github/workflows/deploy.yml`: after CI on `main` (or manual): build + push `ghcr.io/raves21/stryde:{latest,<sha>}` (GHA cache, `DOCKER_PLATFORMS`), ZeroTier (`zerotier/github-action@v1.0.1`), SSH deploy (`IMAGE_TAG` → pull → up -d → prune), wait for `/api/health` = SHA; rollback = run with `tag`; actionlint clean
   - [x] `docs/deploy-home-server.md`: server setup, tunnel network, GHCR, `.env`, Cloudflare hostname + cache/rewrite settings, Google OAuth, GitHub secrets/variables, deploy, rollback, logs/DB shell/backups, VAPID (v2), troubleshooting, self-hosted runner fallback
   - [x] Verified locally: image builds (43 s), runs against Postgres 17, `/api/health` = commit SHA, correct cache headers/404s, healthy, non-root; browser against the image: secure httpOnly cookie, SW controls, Chrome installability clean, offline reload, version shown
-  - [ ] Owner: push to GitHub; add secrets/variables; server + Cloudflare setup → first deploy; rollback test; install on Android/iPhone from `https://stryde.obnsolutions.org`
+  - [x] Pushed to GitHub; CI #1 green on GitHub Actions
+  - [ ] Owner (tracked in `docs/owner-checklist.md`): add secrets; server + Cloudflare setup; rerun Deploy until `/api/health` shows the SHA; rollback test; install on Android/iPhone from `https://stryde.obnsolutions.org`
 
 ## Decisions
 - 2026-10-24: Bun is the API runtime and the package manager (Bun workspaces, `bun.lock`) instead of Node + pnpm. Hono runs on `Bun.serve`; the API runs from TS source with no build step. Docs updated to match. — owner preference; simpler single runtime.
@@ -147,6 +148,9 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
 - Image size is 411 MB: `bun install --production --filter @stryde/api` still pulls some web dev tooling (happy-dom, rolldown bindings) into `node_modules`. Harmless at runtime; trim later if it matters.
 - Local `docker build` stalls on package downloads on this machine (BuildKit network, likely ZeroTier MTU); `--network host` works. GitHub runners aren't affected.
 ## Notes for the next session
+- `docs/owner-checklist.md` is the owner's to-do list (server, deploy key, GitHub secrets, Cloudflare, first deploy, device checks, Google OAuth, open decisions). Keep it in sync when steps are done or change.
+- GitHub Actions annotations: `ubuntu-latest` is moving to Ubuntu 26 and a Node.js 20 deprecation warning came from an action in the deploy job (likely `zerotier/github-action@v1.0.1`). Neither fails the run; check for a newer ZeroTier action release when touching the workflow.
+- Local preview: `PORT=3001 STRYDE_API_PORT=3001 bun run dev` (port 3000 is used by the owner's ticketing Nuxt server), then http://localhost:5173. Local dev accounts from browser checks use the password `correct-horse-battery` (e.g. `p5_mvrnykhd` has 6 workouts of history).
 - `apps/api/src/app.ts` is the runtime-agnostic Hono app (tests use `app.request()` under Vitest); `src/index.ts` is the Bun server entry. Keep Bun-only APIs out of `app.ts`.
 - Dev DB: `docker compose -f docker/compose.dev.yml up -d` → `postgres://stryde:stryde@localhost:5432/stryde`. Integration tests: `DATABASE_URL=postgres://stryde:stryde@localhost:5432/stryde bun run test`.
 - `0001_sync_infra.sql` is hand-written. Never delete the migrations folder to regenerate (that wipes it). New synced tables need their trigger, owner FK and deferred FKs added in a new custom migration (`drizzle-kit generate --custom`).
