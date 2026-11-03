@@ -54,5 +54,5 @@ Needs a Google Cloud OAuth client (web application) with the origins and redirec
 
 ## Housekeeping (not blocking)
 
-- Local `main` is 1 commit ahead of `origin/main` (`3fb7cca`), plus untracked handover and blockers notes. Nothing pushed since `da9b322`.
+- Pushed 2026-11-03 (backup script, ZeroTier bump, inline PR chip). Deploy will fail at "Join ZeroTier" again until blocker 1 is fixed; CI should pass.
 - The ZeroTier action is now `@v1.0.3`. Its post step (`util/post@main`) still targets an old Node runtime, so the deprecation warning stays; GitHub forces it onto Node 24 and it doesn't fail the run.
