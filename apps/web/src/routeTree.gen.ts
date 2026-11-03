@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppFeedRouteImport } from './routes/_app/feed'
+import { Route as AppFriendsRouteImport } from './routes/_app/friends'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppProgressRouteImport } from './routes/_app/progress'
@@ -56,6 +57,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppFeedRoute = AppFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFriendsRoute = AppFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => AppRoute,
 } as any)
 const AppHistoryRoute = AppHistoryRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/feed': typeof AppFeedRoute
+  '/friends': typeof AppFriendsRoute
   '/history': typeof AppHistoryRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/feed': typeof AppFeedRoute
+  '/friends': typeof AppFriendsRoute
   '/history': typeof AppHistoryRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/_app/feed': typeof AppFeedRoute
+  '/_app/friends': typeof AppFriendsRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/progress': typeof AppProgressRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/feed'
+    | '/friends'
     | '/history'
     | '/profile'
     | '/progress'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/feed'
+    | '/friends'
     | '/history'
     | '/profile'
     | '/progress'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/_app/feed'
+    | '/_app/friends'
     | '/_app/history'
     | '/_app/profile'
     | '/_app/progress'
@@ -302,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/feed'
       fullPath: '/feed'
       preLoaderRoute: typeof AppFeedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/friends': {
+      id: '/_app/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof AppFriendsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/history': {
@@ -400,6 +419,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppFeedRoute: typeof AppFeedRoute
+  AppFriendsRoute: typeof AppFriendsRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppProfileRoute: typeof AppProfileRoute
   AppProgressRoute: typeof AppProgressRoute
@@ -415,6 +435,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFeedRoute: AppFeedRoute,
+  AppFriendsRoute: AppFriendsRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppProfileRoute: AppProfileRoute,
   AppProgressRoute: AppProgressRoute,

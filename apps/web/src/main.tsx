@@ -6,10 +6,12 @@ import '@fontsource/barlow-condensed/latin-600.css'
 import '@fontsource/barlow-condensed/latin-700.css'
 import './styles/globals.css'
 
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { listenForInstallPrompt } from './features/pwa/install'
+import { queryClient } from './lib/query-client'
 import { routeTree } from './routeTree.gen'
 
 listenForInstallPrompt()
@@ -27,6 +29,8 @@ if (!root) throw new Error('#root not found')
 
 createRoot(root).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>,
 )

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { format, formatDistanceToNow } from 'date-fns'
-import { Download, Dumbbell, LayoutList, RefreshCw } from 'lucide-react'
+import { Download, Dumbbell, LayoutList, RefreshCw, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Screen } from '@/components/app/screen'
 import { SectionLabel } from '@/components/app/section-label'
@@ -83,6 +83,13 @@ function ProfilePage() {
             {format(createdAt, 'MMM yyyy')}
           </p>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <SectionLabel>Social</SectionLabel>
+        <nav className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <NavRow to="/friends" icon={UsersRound} label="Friends" />
+        </nav>
       </section>
 
       <section className="flex flex-col gap-2">

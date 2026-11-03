@@ -1,10 +1,12 @@
 import { expect, type Page } from '@playwright/test'
 
-export async function signUp(page: Page) {
+/** Signs up a fresh user and lands on Today; returns the new username. */
+export async function signUp(page: Page): Promise<string> {
   const id = `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`
   await page.goto('/signup')
   await page.getByLabel('Display name').fill('Juan Dela Cruz')
-  await page.getByLabel('Username').fill(`e2e_${id}`)
+  const username = `e2e_${id}`
+  await page.getByLabel('Username').fill(username)
   await page.getByLabel('Email').fill(`e2e_${id}@example.com`)
   await page.getByLabel('Password').fill('correct-horse-battery')
   // Enabled once the live username check passes.
@@ -15,6 +17,7 @@ export async function signUp(page: Page) {
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+  return username
 }
 
 type Pulled = { changes: { table: string; row: Record<string, unknown> }[] }

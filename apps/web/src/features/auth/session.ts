@@ -1,6 +1,7 @@
 import { clearCurrentUser, clearLocalData, getCurrentUser, setCurrentUser } from '@/db/meta'
 import { fetchMe, type Me } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
+import { queryClient } from '@/lib/query-client'
 import { stopSync } from '@/sync/controller'
 
 /**
@@ -41,6 +42,7 @@ export async function completeSignIn(): Promise<Me> {
   const result = await fetchMe()
   if (result.status !== 'ok') throw new Error('Signed in, but loading your account failed')
   await setCurrentUser(result.me)
+  queryClient.clear()
   return result.me
 }
 
@@ -54,4 +56,6 @@ export async function signOut(): Promise<void> {
   // A pull finishing after the wipe would leave rows without an owner.
   await stopSync()
   await clearLocalData()
+  // Social data belongs to the account that just left.
+  queryClient.clear()
 }

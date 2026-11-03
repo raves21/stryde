@@ -1,11 +1,10 @@
 import { toDisplayWeight } from '@stryde/shared'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { format } from 'date-fns'
-import { Ellipsis, Eye, EyeOff, Pencil, SearchX, Trash2, Trophy } from 'lucide-react'
+import { Ellipsis, Eye, EyeOff, Pencil, Trash2, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
-import { EmptyState } from '@/components/app/empty-state'
 import { Screen } from '@/components/app/screen'
 import { SectionLabel } from '@/components/app/section-label'
 import { StatTile } from '@/components/app/stat-tile'
@@ -22,6 +21,7 @@ import {
 import { deleteSession, type SessionTree, updateSession } from '@/db/repositories/sessions'
 import { formatSpan, useTraining } from '@/features/progress/use-training'
 import { useUnit } from '@/features/settings/use-settings'
+import { FriendSessionPage } from '@/features/social/components/friend-session-page'
 import { formatPR } from '@/features/workout/format-pr'
 import { useSessionTree } from '@/features/workout/use-workout'
 import type { Training } from '@/lib/training'
@@ -43,15 +43,10 @@ function SessionDetailPage() {
       void navigate({ to: '/workout/active', replace: true })
   }, [tree, navigate])
 
-  if (tree === undefined || !training) return null
-  if (tree === null) {
-    return (
-      <Screen>
-        <TopBar title="Workout" back />
-        <EmptyState icon={SearchX} title="This workout doesn't exist or was deleted." />
-      </Screen>
-    )
-  }
+  if (tree === undefined) return null
+  // Not on this device: a friend's shared workout (or an unknown id), fetched online.
+  if (tree === null) return <FriendSessionPage sessionId={sessionId} />
+  if (!training) return null
   if (tree.session.finishedAt === null) return null
   return <SessionDetail tree={tree} training={training} />
 }
