@@ -55,7 +55,7 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 - [ ] Tell me to push (or push `main` yourself). CI runs, then Deploy builds the image, pushes it to GHCR, deploys it and waits for the health check.
 - [ ] If the server can't pull the image: either make the GHCR package `stryde` public, or on the server run `docker login ghcr.io -u raves21` with a token that has `read:packages` [§2.3]. Then rerun Deploy from the Actions tab.
 - [ ] Open `https://stryde.obnsolutions.org/api/health`. It should show the latest commit SHA.
-- [ ] Set up a database backup cron job [§8].
+- [ ] Set up the database backup cron job with `docker/backup.sh` [§8], and copy the dumps off the server.
 
 ## 6. Check it works
 

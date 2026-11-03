@@ -81,10 +81,12 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
   - [x] `docker/Dockerfile`: multi-stage on `oven/bun:1.3.14-alpine` (web build with `GIT_SHA`, API-only production deps, non-root `bun`, `HEALTHCHECK` on `/api/health`, `EXPOSE 3000`); `.dockerignore`
   - [x] `docker/compose.yml` (app + Postgres 17, no published ports, `stryde-app` alias on the external `${TUNNEL_NETWORK:-cf_tunnel}` network, `pgdata`/`uploads` volumes, `DATABASE_URL` built from `POSTGRES_PASSWORD`); `docker/.env.example` updated (`IMAGE_TAG`, `TUNNEL_NETWORK`, `UPLOAD_DIR`, hostname)
   - [x] `.github/workflows/ci.yml`: Bun 1.3.14, cached install, typecheck, lint, tests with a Postgres 17 service, build, Playwright e2e (traces on failure)
-  - [x] `.github/workflows/deploy.yml`: after CI on `main` (or manual): build + push `ghcr.io/raves21/stryde:{latest,<sha>}` (GHA cache, `DOCKER_PLATFORMS`), ZeroTier (`zerotier/github-action@v1.0.1`), SSH deploy (`IMAGE_TAG` → pull → up -d → prune), wait for `/api/health` = SHA; rollback = run with `tag`; actionlint clean
+  - [x] `.github/workflows/deploy.yml`: after CI on `main` (or manual): build + push `ghcr.io/raves21/stryde:{latest,<sha>}` (GHA cache, `DOCKER_PLATFORMS`), ZeroTier (`zerotier/github-action@v1.0.3`), SSH deploy (`IMAGE_TAG` → pull → up -d → prune), wait for `/api/health` = SHA; rollback = run with `tag`; actionlint clean
   - [x] `docs/deploy-home-server.md`: server setup, tunnel network, GHCR, `.env`, Cloudflare hostname + cache/rewrite settings, Google OAuth, GitHub secrets/variables, deploy, rollback, logs/DB shell/backups, VAPID (v2), troubleshooting, self-hosted runner fallback
   - [x] Verified locally: image builds (43 s), runs against Postgres 17, `/api/health` = commit SHA, correct cache headers/404s, healthy, non-root; browser against the image: secure httpOnly cookie, SW controls, Chrome installability clean, offline reload, version shown
   - [x] Pushed to GitHub; CI #1 green on GitHub Actions
+  - [x] Deploy #1 failed at "Join ZeroTier": the repo has no secrets yet (`gh secret list` is empty). Blockers are summarized in `BLOCKERS.md`. ZeroTier action bumped to v1.0.3 (its post step still triggers the Node deprecation warning, harmless)
+  - [x] `docker/backup.sh` (pg_dump to `backups/`, verifies the dump with `pg_restore --list`, 14-day retention) + `docs/deploy-home-server.md` §8 cron instructions; tested against the dev DB
   - [ ] Owner (tracked in `docs/owner-checklist.md`): add secrets; server + Cloudflare setup; rerun Deploy until `/api/health` shows the SHA; rollback test; install on Android/iPhone from `https://stryde.obnsolutions.org`
 
 ## Decisions
@@ -149,7 +151,8 @@ Phase 7 — Docker, CI/CD & Home Server Deploy (`plan/phase-07-docker-cicd.md`):
 - Local `docker build` stalls on package downloads on this machine (BuildKit network, likely ZeroTier MTU); `--network host` works. GitHub runners aren't affected.
 ## Notes for the next session
 - `docs/owner-checklist.md` is the owner's to-do list (server, deploy key, GitHub secrets, Cloudflare, first deploy, device checks, Google OAuth, open decisions). Keep it in sync when steps are done or change.
-- GitHub Actions annotations: `ubuntu-latest` is moving to Ubuntu 26 and a Node.js 20 deprecation warning came from an action in the deploy job (likely `zerotier/github-action@v1.0.1`). Neither fails the run; check for a newer ZeroTier action release when touching the workflow.
+- GitHub Actions annotations: `ubuntu-latest` is moving to Ubuntu 26 and a Node.js 20 deprecation warning came from an action in the deploy job (`zerotier/github-action`; v1.0.3 is the newest release and still has it). Neither fails the run.
+- `gh` is installed and logged in as `raves21` (`gh run view <id> --log-failed`, `gh secret list`). Set secrets yourself with `gh secret set`, never through the chat.
 - Local preview: `PORT=3001 STRYDE_API_PORT=3001 bun run dev` (port 3000 is used by the owner's ticketing Nuxt server), then http://localhost:5173. Local dev accounts from browser checks use the password `correct-horse-battery` (e.g. `p5_mvrnykhd` has 6 workouts of history).
 - `apps/api/src/app.ts` is the runtime-agnostic Hono app (tests use `app.request()` under Vitest); `src/index.ts` is the Bun server entry. Keep Bun-only APIs out of `app.ts`.
 - Dev DB: `docker compose -f docker/compose.dev.yml up -d` → `postgres://stryde:stryde@localhost:5432/stryde`. Integration tests: `DATABASE_URL=postgres://stryde:stryde@localhost:5432/stryde bun run test`.

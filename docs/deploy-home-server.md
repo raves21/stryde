@@ -209,11 +209,16 @@ docker compose up -d app                  # apply .env changes
 docker compose exec db psql -U stryde     # SQL shell
 ```
 
-**Backups** (run from cron, keep copies off the server):
+**Backups.** `docker/backup.sh` dumps the database to `~/apps/stryde/backups/` (checks the dump can be read back, keeps 14 days; override with `BACKUP_DIR` / `KEEP_DAYS`). Copy it next to `compose.yml` and schedule it:
 
 ```sh
-docker compose exec -T db pg_dump -U stryde -Fc stryde > stryde-$(date +%F).dump
+cp backup.sh ~/apps/stryde/ && chmod +x ~/apps/stryde/backup.sh   # from docker/ in the repo
+~/apps/stryde/backup.sh                                            # run once by hand to check
+crontab -e
+# 30 3 * * * /home/<user>/apps/stryde/backup.sh >> /home/<user>/apps/stryde/backups/backup.log 2>&1
 ```
+
+A backup on the same disk doesn't survive a dead disk: also copy `backups/` somewhere else (another machine over ZeroTier with `rsync`, or a cloud drive).
 
 Restore into a fresh stack:
 
