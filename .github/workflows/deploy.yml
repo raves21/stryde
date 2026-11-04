@@ -117,12 +117,36 @@ jobs:
           docker image prune -f
           SCRIPT
 
+      # Checked on the server itself (over the same SSH path as the deploy): Cloudflare's
+      # bot protection answers 403 to GitHub runners, so the public URL can't be the gate.
       - name: Wait for /api/health to report ${{ env.TAG }}
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" "TAG='$TAG' DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'SCRIPT'
+          set -uo pipefail
+          cd "$DEPLOY_PATH"
+          port=$(grep -E '^APP_PORT=' .env | cut -d= -f2)
           for i in $(seq 1 100); do
-            version=$(curl -fsS "$APP_URL/api/health?ts=$(date +%s)" | jq -r .version || true)
+            version=$(curl -fsS "http://127.0.0.1:${port:-8173}/api/health" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p' || true)
             echo "attempt $i: $version"
             if [ "$version" = "$TAG" ]; then exit 0; fi
             sleep 3
           done
-          echo "::error::$APP_URL did not report $TAG within 5 minutes"; exit 1
+          echo "::error::the app did not report $TAG within 5 minutes"
+          docker compose ps
+          docker compose logs --tail 40 app
+          exit 1
+          SCRIPT
+
+      # Informational: the tunnel and DNS path. Never fails the deploy.
+      - name: Check the public URL
+        continue-on-error: true
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/health" || true)
+          echo "$APP_URL/api/health -> HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::$APP_URL answered HTTP $code to the runner (Cloudflare may block GitHub's IPs); the server itself is healthy"
+          fi
