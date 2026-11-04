@@ -1,6 +1,7 @@
 # Production stack on the home server (docs/deploy-home-server.md).
 # Lives in DEPLOY_PATH next to a filled-in .env (copy docker/.env.example).
-# No published ports: cloudflared reaches the app over the shared tunnel network.
+# The app is published on 127.0.0.1 only (APP_PORT); cloudflared runs on the host and
+# the tunnel's public hostname points at http://localhost:<APP_PORT>.
 name: stryde
 services:
   app:
@@ -14,11 +15,9 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      internal: {}
-      tunnel:
-        # Cloudflare Tunnel public hostname → http://stryde-app:3000
-        aliases: [stryde-app]
+    ports:
+      - 127.0.0.1:${APP_PORT:-8173}:3000
+    networks: [internal]
   db:
     image: postgres:17-alpine
     environment:
@@ -36,9 +35,6 @@ services:
 
 networks:
   internal: {}
-  tunnel:
-    external: true
-    name: ${TUNNEL_NETWORK:-cf_tunnel}
 
 volumes:
   pgdata: {}

@@ -13,13 +13,13 @@ The deploy needs, on the server:
 - [x] Docker usable without `sudo` for `obn` (`docker ps` works over SSH)
 - [x] The deploy public key is in `authorized_keys` (key login works)
 - [x] ZeroTier joined: server is 192.168.196.25
-- [ ] **Where does cloudflared run?** `docker ps` on the server shows no cloudflared container, and the other apps publish on `127.0.0.1:<port>`, so it is probably a host service. `compose.yml` assumes a container on a shared Docker network (`stryde-app:3000`). If it's a host service, compose must publish `127.0.0.1:8173:3000` (8173 looked free) and the tunnel points at `http://localhost:8173`. Check: `systemctl status cloudflared --no-pager | head -5`
-- [ ] `/home/obn/projects/stryde/compose.yml` and a filled-in `.env` (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `TUNNEL_NETWORK` if cloudflared is a container)
+- [x] cloudflared runs as host services (`cloudflared-ravesdev` is the one to use), so `compose.yml` now publishes `127.0.0.1:${APP_PORT:-8173}:3000` instead of joining a Docker network. Still to check: port 8173 is free on the server (`ss -ltn | grep :8173`)
+- [ ] `/home/obn/projects/stryde/compose.yml` (the new one) and a filled-in `.env` (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `APP_PORT`)
 - [ ] Image pull access: make the GHCR package `stryde` public, or `docker login ghcr.io` with a `read:packages` token (the package exists once a Deploy build has run; the earlier build pushed it)
 
 ## 3. Cloudflare not configured
 
-- [ ] Tunnel public hostname `stryde.obnsolutions.org` → HTTP `stryde-app:3000`
+- [ ] Public hostname `stryde.obnsolutions.org` → HTTP `localhost:8173` on the `cloudflared-ravesdev` tunnel (the domain must be a zone in the Cloudflare account that owns that tunnel)
 - [ ] Cache rules: bypass for `/api/*`, `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest`, `/registerSW.js`
 - [ ] Rocket Loader off, Email Address Obfuscation off, Always Use HTTPS on
 

@@ -5,18 +5,14 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 ## 1. Server (one time) [§2]
 
 - [ ] Make sure the deploy user can run Docker without `sudo` (`sudo usermod -aG docker <user>`, then log out and back in).
-- [ ] Find the Docker network your `cloudflared` container is on (`docker network ls`, `docker inspect <cloudflared>`). If it's only on `bridge`, create one and attach cloudflared:
-  ```sh
-  docker network create cf_tunnel
-  docker network connect cf_tunnel <cloudflared-container>
-  ```
+- [ ] Check that port 8173 is free on the server (`ss -ltn | grep :8173`). cloudflared runs on the host and forwards to `127.0.0.1:8173`.
 - [ ] Create the app folder and copy the two files from the repo:
-  - `docker/compose.yml` → `~/apps/stryde/compose.yml`
-  - `docker/.env.example` → `~/apps/stryde/.env`
-- [ ] Fill in `~/apps/stryde/.env`, then `chmod 600 .env`:
+  - `docker/compose.yml` → `/home/obn/projects/stryde/compose.yml`
+  - `docker/.env.example` → `/home/obn/projects/stryde/.env`
+- [ ] Fill in `/home/obn/projects/stryde/.env`, then `chmod 600 .env`:
   - `POSTGRES_PASSWORD` = output of `openssl rand -hex 24`
   - `BETTER_AUTH_SECRET` = output of `openssl rand -base64 32`
-  - `TUNNEL_NETWORK` = the network name from above
+  - `APP_PORT` = `8173` (or another free port)
   - `PUBLIC_URL` stays `https://stryde.obnsolutions.org`
 - [x] Note the server's ZeroTier IP (192.168.196.25).
 
@@ -44,7 +40,7 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 
 ## 4. Cloudflare [§3]
 
-- [ ] Zero Trust → Networks → Tunnels → your tunnel → Public Hostname: `stryde.obnsolutions.org` → **HTTP** `stryde-app:3000`.
+- [ ] Zero Trust → Networks → Tunnels → your tunnel → Public Hostname: `stryde.obnsolutions.org` → **HTTP** `localhost:8173`, on the tunnel served by `cloudflared-ravesdev`.
 - [ ] Caching → Cache Rules: for hostname `stryde.obnsolutions.org`, **bypass cache** when the path starts with `/api/` or is `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest`, `/registerSW.js`.
 - [ ] Speed → Optimization: **Rocket Loader off**.
 - [ ] Scrape Shield: **Email Address Obfuscation off**.

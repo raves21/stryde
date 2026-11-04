@@ -1,9 +1,9 @@
 # Deploying Stryde to the home server
 
-Stryde runs as two containers on the home server: **app** (Bun: the API plus the built web app, one image from GHCR) and **db** (Postgres 17). Your existing **cloudflared** container exposes the app at `https://stryde.obnsolutions.org`; nothing publishes a port on the server.
+Stryde runs as two containers on the home server: **app** (Bun: the API plus the built web app, one image from GHCR) and **db** (Postgres 17). Your existing **cloudflared** service (running on the host) exposes the app at `https://stryde.obnsolutions.org`; the app listens on `127.0.0.1:8173` only, so nothing is reachable from the network except through the tunnel.
 
 ```
-phone ──HTTPS──▶ Cloudflare ──tunnel──▶ cloudflared ──(docker network cf_tunnel)──▶ stryde-app:3000
+phone ──HTTPS──▶ Cloudflare ──tunnel──▶ cloudflared (host service) ──▶ 127.0.0.1:8173 → app:3000
                                                                                         │
                                                                          (network internal) ▼
                                                                                       db:5432
@@ -26,7 +26,7 @@ Files in the repo:
 
 - The server runs Docker Engine with the Compose plugin (`docker compose version`), on **amd64** (the image is built for `linux/amd64`; change the `DOCKER_PLATFORMS` variable if that ever changes).
 - The server is a member of your ZeroTier network and you know its ZeroTier IP (`zerotier-cli listnetworks` on the server, or ZeroTier Central).
-- `cloudflared` runs as a Docker container and serves a tunnel you manage in Cloudflare Zero Trust.
+- `cloudflared` runs on the host (here: the `cloudflared-ravesdev` systemd service) and serves a tunnel you manage in Cloudflare Zero Trust.
 - The repository is on GitHub (`raves21/stryde`) with Actions enabled.
 
 ## 2. One-time server setup
@@ -39,24 +39,15 @@ Use your normal user or a dedicated `deploy` user. It must be able to run Docker
 sudo usermod -aG docker "$USER"   # log out and back in afterwards
 ```
 
-### 2.2 The tunnel network
+### 2.2 The port cloudflared forwards to
 
-Stryde joins the Docker network that cloudflared is on, so cloudflared can reach it by name.
+cloudflared runs on the host, so it reaches Stryde through a port on `127.0.0.1` (compose publishes `127.0.0.1:${APP_PORT}:3000`; nothing is exposed on other interfaces). Pick a port nothing else uses:
 
 ```sh
-docker network ls
-docker inspect <cloudflared-container> --format '{{json .NetworkSettings.Networks}}'
+ss -ltn | grep -E ':8173\b' || echo "8173 is free"
 ```
 
-- If cloudflared is already on a user-defined network (for example `cf_tunnel` or `proxy`), use that name as `TUNNEL_NETWORK` below.
-- If it is only on the default `bridge` network, create a shared network and attach it:
-
-  ```sh
-  docker network create cf_tunnel
-  docker network connect cf_tunnel <cloudflared-container>
-  ```
-
-  If cloudflared is started by its own compose file, also add the network there so it survives re-creation.
+If it's taken, choose another and set `APP_PORT` in `.env` (and use it in the Cloudflare hostname in §3.1).
 
 ### 2.3 Pulling from GHCR
 
@@ -89,7 +80,7 @@ Fill in `~/apps/stryde/.env`:
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` |
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32`. Changing it later signs everyone out |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional, see §4 |
-| `TUNNEL_NETWORK` | The network from §2.2 (`cf_tunnel` by default) |
+| `APP_PORT` | Host port on `127.0.0.1` for cloudflared, §2.2 (`8173` by default) |
 | `UPLOAD_DIR` | Leave `/data/uploads` (a volume) |
 
 `DATABASE_URL` is built by `compose.yml` from `POSTGRES_PASSWORD`; don't set it. `GIT_SHA` comes from the image.
@@ -116,9 +107,9 @@ Migrations and the preset exercise seed run automatically every time the app sta
 Zero Trust → Networks → Tunnels → your tunnel → **Public Hostname** → Add:
 
 - Subdomain `stryde`, domain `obnsolutions.org`
-- Service: **HTTP**, URL `stryde-app:3000`
+- Service: **HTTP**, URL `localhost:8173` (your `APP_PORT`)
 
-(`stryde-app` is the app's alias on the tunnel network, chosen so it can't clash with other projects' `app` services. For a locally managed tunnel, add the same as an `ingress` rule in cloudflared's `config.yml`.)
+(For a locally managed tunnel, add the same as an `ingress` rule in cloudflared's `config.yml`: `hostname: stryde.obnsolutions.org`, `service: http://localhost:8173`. The domain must be a zone in the Cloudflare account that owns the tunnel.)
 
 Open `https://stryde.obnsolutions.org/api/health`: you should see `{"ok":true,"version":"<sha>"}`.
 
@@ -238,7 +229,7 @@ Phase 9 adds notifications. Then run `bun run gen:vapid` locally, put `VAPID_PUB
 
 | Symptom | Check |
 |---|---|
-| Cloudflare 502 / "Bad gateway" | `docker compose ps` (is app healthy?); cloudflared and the app share `TUNNEL_NETWORK`; the public hostname points to `http://stryde-app:3000` |
+| Cloudflare 502 / "Bad gateway" | `docker compose ps` (is app healthy?); the hostname's service is `http://localhost:<APP_PORT>` and `curl -s localhost:<APP_PORT>/api/health` works on the server |
 | Sign-in fails, logs say "Invalid origin" | `PUBLIC_URL` must be exactly `https://stryde.obnsolutions.org` |
 | Deploy job: "Server not reachable over ZeroTier" | `ZEROTIER_NETWORK_ID`/`ZEROTIER_CENTRAL_TOKEN`; the server is online in Central; flow rules allow SSH (22) from new members |
 | Deploy job: health check never reports the SHA | `docker compose logs app` on the server (migration or env error); `.env` has an `IMAGE_TAG=` line; Cloudflare isn't caching `/api/*` |
