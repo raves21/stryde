@@ -2,34 +2,20 @@
 
 What stops Stryde from going live, as of 2026-11-03. None of these are code bugs: v1 (Phases 0–7) is built and tested locally. Step-by-step instructions are in [`docs/owner-checklist.md`](docs/owner-checklist.md) and [`docs/deploy-home-server.md`](docs/deploy-home-server.md).
 
-## 1. First deploy fails: no GitHub secrets (blocks Phase 7 acceptance)
+## 1. ~~First deploy fails: no GitHub secrets~~ (done 2026-11-04)
 
-Deploy run [#40649038374](https://github.com/raves21/stryde/actions/runs/40649038374) failed at the **Join ZeroTier** step. `gh secret list` shows the repo has no secrets or variables. The image build passed, and every step after Join ZeroTier was skipped.
-
-Secrets to add (repo → Settings → Secrets and variables → Actions, or `gh secret set <NAME> --repo raves21/stryde`):
-
-| Secret | Value |
-| --- | --- |
-| `ZEROTIER_NETWORK_ID` | the ZeroTier network ID |
-| `ZEROTIER_CENTRAL_TOKEN` | ZeroTier Central → Account → API Access Tokens |
-| `DEPLOY_HOST` | the server's ZeroTier IP |
-| `DEPLOY_USER` | SSH user on the server |
-| `DEPLOY_SSH_KEY` | private key of the deploy key pair |
-| `DEPLOY_PATH` | absolute app folder, e.g. `/home/<user>/apps/stryde` |
-| `DEPLOY_KNOWN_HOSTS` | **set 2026-11-04** (host keys of 192.168.196.25) |
-
-No variables are needed (`APP_URL` and `DOCKER_PLATFORMS` have defaults).
+Deploy run [#40649038374](https://github.com/raves21/stryde/actions/runs/40649038374) failed at **Join ZeroTier** because the repo had no secrets. All seven are now set (`ZEROTIER_NETWORK_ID`, `ZEROTIER_CENTRAL_TOKEN`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH` = `/home/obn/projects/stryde`, `DEPLOY_KNOWN_HOSTS`). The `ZEROTIER_CENTRAL_TOKEN` was pasted into a chat, so consider rotating it. Not yet re-run: the next Deploy should get past Join ZeroTier, then needs section 2.
 
 ## 2. Home server not confirmed set up
 
 The deploy needs, on the server:
 
-- [ ] Docker usable without `sudo` for the deploy user
-- [ ] A Docker network shared with `cloudflared` (`cf_tunnel` or similar)
-- [ ] `~/apps/stryde/compose.yml` and a filled-in `.env` (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `TUNNEL_NETWORK`)
-- [ ] The deploy public key in `authorized_keys` (`ssh-copy-id`)
-- [ ] ZeroTier joined, with its IP noted
-- [ ] Image pull access: make the GHCR package `stryde` public, or `docker login ghcr.io` with a `read:packages` token
+- [x] Docker usable without `sudo` for `obn` (`docker ps` works over SSH)
+- [x] The deploy public key is in `authorized_keys` (key login works)
+- [x] ZeroTier joined: server is 192.168.196.25
+- [ ] **Where does cloudflared run?** `docker ps` on the server shows no cloudflared container, and the other apps publish on `127.0.0.1:<port>`, so it is probably a host service. `compose.yml` assumes a container on a shared Docker network (`stryde-app:3000`). If it's a host service, compose must publish `127.0.0.1:8173:3000` (8173 looked free) and the tunnel points at `http://localhost:8173`. Check: `systemctl status cloudflared --no-pager | head -5`
+- [ ] `/home/obn/projects/stryde/compose.yml` and a filled-in `.env` (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `TUNNEL_NETWORK` if cloudflared is a container)
+- [ ] Image pull access: make the GHCR package `stryde` public, or `docker login ghcr.io` with a `read:packages` token (the package exists once a Deploy build has run; the earlier build pushed it)
 
 ## 3. Cloudflare not configured
 

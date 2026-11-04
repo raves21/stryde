@@ -18,11 +18,11 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
   - `BETTER_AUTH_SECRET` = output of `openssl rand -base64 32`
   - `TUNNEL_NETWORK` = the network name from above
   - `PUBLIC_URL` stays `https://stryde.obnsolutions.org`
-- [ ] Note the server's ZeroTier IP (`zerotier-cli listnetworks`).
+- [x] Note the server's ZeroTier IP (192.168.196.25).
 
 ## 2. Deploy key [§5]
 
-- [ ] On your machine:
+- [x] Done 2026-11-04. On your machine:
   ```sh
   ssh-keygen -t ed25519 -C "stryde-deploy" -f stryde_deploy -N ""
   ssh-copy-id -i stryde_deploy.pub <user>@<zerotier-ip>
@@ -32,12 +32,12 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 ## 3. GitHub (repo → Settings → Secrets and variables → Actions) [§5]
 
 - [ ] Secrets:
-  - [ ] `ZEROTIER_NETWORK_ID`
-  - [ ] `ZEROTIER_CENTRAL_TOKEN` (ZeroTier Central → Account → API Access Tokens)
-  - [ ] `DEPLOY_HOST` (the server's ZeroTier IP)
-  - [ ] `DEPLOY_USER`
-  - [ ] `DEPLOY_SSH_KEY` (contents of the private key `stryde_deploy`; delete the local copy afterwards)
-  - [ ] `DEPLOY_PATH` (absolute path, e.g. `/home/<user>/apps/stryde`)
+  - [x] `ZEROTIER_NETWORK_ID`
+  - [x] `ZEROTIER_CENTRAL_TOKEN` (ZeroTier Central → Account → API Access Tokens)
+  - [x] `DEPLOY_HOST` (the server's ZeroTier IP)
+  - [x] `DEPLOY_USER`
+  - [x] `DEPLOY_SSH_KEY` (contents of the private key `stryde_deploy`; delete the local copy afterwards)
+  - [x] `DEPLOY_PATH` (absolute path, e.g. `/home/<user>/apps/stryde`)
   - [ ] `DEPLOY_KNOWN_HOSTS` (the `ssh-keyscan` output)
 - [ ] Variables: none needed. `APP_URL` defaults to `https://stryde.obnsolutions.org` and `DOCKER_PLATFORMS` to `linux/amd64`.
 - [ ] Optional: Settings → Environments → `production` → add yourself as a required reviewer if you want to approve each deploy.
