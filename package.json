@@ -19,6 +19,7 @@
     "test": "bun run --filter '*' test",
     "db:generate": "bun run --filter @stryde/api db:generate",
     "db:migrate": "bun run --filter @stryde/api db:migrate",
+    "gen:vapid": "bun run --filter @stryde/api gen:vapid",
     "e2e": "bun run --filter @stryde/web e2e"
   },
   "devDependencies": {

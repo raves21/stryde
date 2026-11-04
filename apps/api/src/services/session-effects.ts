@@ -3,6 +3,7 @@ import {
   computeAllPRs,
   type ExerciseType,
   type FeedPR,
+  NOTIFY_WINDOW_MS,
   type PrEvent,
   prTimeline,
   roundTo,
@@ -17,10 +18,9 @@ import {
   sessions,
   sets,
 } from '../db/schema'
+import { publish } from './events'
+import { friendIds } from './friend-graph'
 import { friendWorkoutFinished } from './notify'
-
-/** A workout finished this recently notifies friends; a late sync doesn't (§6). */
-const NOTIFY_WINDOW_MS = 60 * 60 * 1000
 
 /**
  * Side effects after a push commits (DATA_MODEL_AND_SYNC.md §6), for the sessions and
@@ -62,6 +62,7 @@ export async function syncFeedEvents(
           .where(inArray(feedEvents.sessionId, sessionIds))
       ).map((e) => e.sessionId),
     )
+    let feedChanged = false
     for (const session of rows) {
       const finishedAt = session.finishedAt
       const visible = finishedAt !== null && session.deletedAt === null && session.shareWithFriends
@@ -71,6 +72,14 @@ export async function syncFeedEvents(
             .update(feedEvents)
             .set({ hidden: true })
             .where(eq(feedEvents.sessionId, session.id))
+          feedChanged = true
+        } else if (finishedAt !== null && session.deletedAt === null) {
+          // Finished as a private workout: keep a hidden event so sharing it later is an
+          // "unhide" (visible, no notification) and not a fresh finish (PRODUCT_SPEC.md §3).
+          await db
+            .insert(feedEvents)
+            .values({ userId, sessionId: session.id, createdAt: finishedAt, hidden: true })
+            .onConflictDoNothing()
         }
         continue
       }
@@ -81,6 +90,7 @@ export async function syncFeedEvents(
           .update(feedEvents)
           .set({ hidden: false, createdAt: finishedAt, prs })
           .where(eq(feedEvents.sessionId, session.id))
+        feedChanged = true
         continue
       }
       const inserted = await db
@@ -88,10 +98,13 @@ export async function syncFeedEvents(
         .values({ userId, sessionId: session.id, createdAt: finishedAt, prs })
         .onConflictDoNothing()
         .returning({ id: feedEvents.id })
+      if (inserted.length > 0) feedChanged = true
       if (inserted.length > 0 && now.getTime() - finishedAt.getTime() <= NOTIFY_WINDOW_MS) {
         await friendWorkoutFinished(db, { userId, sessionId: session.id, finishedAt })
       }
     }
+    // Open feeds (mine and my friends') reload.
+    if (feedChanged) publish([userId, ...(await friendIds(db, userId))], { type: 'feed' })
   }
   await refreshFeedPRs(db, userId, exerciseIds, new Set(sessionIds))
 }

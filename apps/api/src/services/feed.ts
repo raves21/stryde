@@ -2,7 +2,8 @@ import type { FeedItem, FeedPage, FeedPR } from '@stryde/shared'
 import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { feedEvents, sessionExercises, sessions, sets, user } from '../db/schema'
-import { friendIds, publicProfile } from './friends'
+import { friendIds } from './friend-graph'
+import { publicProfile } from './friends'
 import { reactionSummary } from './reactions'
 
 // Cursor = "<createdAt ISO>|<event id>": events can share a timestamp, the id breaks ties.

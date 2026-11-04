@@ -9,6 +9,8 @@ import { normalizeUsername } from '@stryde/shared'
 import { and, desc, eq, inArray, ne, or, sql } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { feedEvents, friendMutes, friendships, user } from '../db/schema'
+import { areFriends, friendIds, pair } from './friend-graph'
+import { friendAccepted, friendRequestReceived } from './notify'
 
 // Friendships (PRODUCT_SPEC.md §3, DATA_MODEL_AND_SYNC.md §7). Mutual: a request is
 // accepted by the addressee; either side can remove the friend afterwards.
@@ -29,35 +31,6 @@ export const publicProfile = (u: Pick<UserRow, 'username' | 'name' | 'image'>): 
   displayName: u.name,
   avatarUrl: u.image ?? null,
 })
-
-const pair = (a: string, b: string) =>
-  or(
-    and(eq(friendships.requesterId, a), eq(friendships.addresseeId, b)),
-    and(eq(friendships.requesterId, b), eq(friendships.addresseeId, a)),
-  )
-
-/** Ids of the user's accepted friends. */
-export async function friendIds(db: Db, userId: string): Promise<string[]> {
-  const rows = await db
-    .select({ requesterId: friendships.requesterId, addresseeId: friendships.addresseeId })
-    .from(friendships)
-    .where(
-      and(
-        eq(friendships.status, 'accepted'),
-        or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)),
-      ),
-    )
-  return rows.map((r) => (r.requesterId === userId ? r.addresseeId : r.requesterId))
-}
-
-export async function areFriends(db: Db, a: string, b: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: friendships.id })
-    .from(friendships)
-    .where(and(pair(a, b), eq(friendships.status, 'accepted')))
-    .limit(1)
-  return !!row
-}
 
 /** Escapes LIKE wildcards so a search for `a_b` doesn't match `axb`. */
 const likePrefix = (q: string) => `${q.replace(/[\\%_]/g, '\\$&')}%`
@@ -111,6 +84,7 @@ export async function sendRequest(
   const [existing] = await db.select().from(friendships).where(pair(me, target.id)).limit(1)
   if (!existing) {
     await db.insert(friendships).values({ requesterId: me, addresseeId: target.id })
+    await friendRequestReceived(db, { fromUserId: me, toUserId: target.id })
     return { status: 'pending' }
   }
   if (existing.status === 'accepted') return fail(409, 'already_friends', 'You are already friends')
@@ -120,12 +94,14 @@ export async function sendRequest(
       .update(friendships)
       .set({ status: 'accepted', updatedAt: new Date() })
       .where(eq(friendships.id, existing.id))
+    await friendAccepted(db, { accepterId: me, requesterId: target.id })
     return { status: 'accepted' }
   }
   await db
     .update(friendships)
     .set({ requesterId: me, addresseeId: target.id, status: 'pending', updatedAt: new Date() })
     .where(eq(friendships.id, existing.id))
+  await friendRequestReceived(db, { fromUserId: me, toUserId: target.id })
   return { status: 'pending' }
 }
 
@@ -146,8 +122,13 @@ export async function answerRequest(
         eq(friendships.status, 'pending'),
       ),
     )
-    .returning({ id: friendships.id })
-  return updated.length === 0 ? fail(404, 'not_found', 'Request not found') : { status }
+    .returning({ id: friendships.id, requesterId: friendships.requesterId })
+  const request = updated[0]
+  if (!request) return fail(404, 'not_found', 'Request not found')
+  if (status === 'accepted') {
+    await friendAccepted(db, { accepterId: me, requesterId: request.requesterId })
+  }
+  return { status }
 }
 
 /**

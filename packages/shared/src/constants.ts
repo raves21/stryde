@@ -75,3 +75,30 @@ export const USERNAME_MAX_LENGTH = 20
 export const PASSWORD_MIN_LENGTH = 8
 
 export const DEFAULT_REST_SECONDS = 120
+
+export const NOTIFICATION_TYPES = [
+  'friend_workout_finished',
+  'reaction_received',
+  'friend_request',
+  'friend_accepted',
+  'rest_timer_done',
+] as const
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
+
+/** The `user_settings` switch that gates each notification type (PRODUCT_SPEC.md §4.7). */
+export const NOTIFICATION_SETTING_KEYS = {
+  friend_workout_finished: 'notifyFriendWorkouts',
+  reaction_received: 'notifyReactions',
+  friend_request: 'notifyFriendRequests',
+  friend_accepted: 'notifyFriendRequests',
+  rest_timer_done: 'notifyRestTimer',
+} as const satisfies Record<NotificationType, string>
+
+/** Types caused by a friend's activity; a muted friend doesn't trigger them. */
+export const FRIEND_MUTABLE_NOTIFICATIONS: readonly NotificationType[] = [
+  'friend_workout_finished',
+  'reaction_received',
+]
+
+/** A workout finished this recently notifies friends; a late sync doesn't. */
+export const NOTIFY_WINDOW_MS = 60 * 60 * 1000

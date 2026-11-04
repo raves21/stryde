@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun src/db/migrate-cli.ts"
+    "db:migrate": "bun src/db/migrate-cli.ts",
+    "gen:vapid": "bun src/scripts/gen-vapid.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.12",
@@ -19,10 +20,12 @@
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.13",
     "postgres": "^3.4.9",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.11",
     "vitest": "^5.0.5"
   }

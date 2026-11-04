@@ -3,7 +3,9 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { reactions, user } from '../db/schema'
 import { canViewSession } from './access'
+import { publish } from './events'
 import { publicProfile } from './friends'
+import { reactionReceived } from './notify'
 
 /** Reaction counts per emoji and my own reaction, for several sessions in two queries. */
 export async function reactionSummary(
@@ -46,7 +48,8 @@ export async function setReaction(
   sessionId: string,
   emoji: ReactionEmoji,
 ): Promise<{ emoji: ReactionEmoji } | null> {
-  if (!(await canViewSession(db, me, sessionId))) return null
+  const session = await canViewSession(db, me, sessionId)
+  if (!session) return null
   await db
     .insert(reactions)
     .values({ userId: me, sessionId, emoji })
@@ -54,6 +57,9 @@ export async function setReaction(
       target: [reactions.userId, reactions.sessionId],
       set: { emoji, createdAt: new Date() },
     })
+  await reactionReceived(db, { actorId: me, sessionId, ownerId: session.userId, emoji })
+  // The owner's open feed shows reaction counts.
+  publish(session.userId, { type: 'feed' })
   return { emoji }
 }
 
@@ -63,10 +69,12 @@ export async function removeReaction(
   me: string,
   sessionId: string,
 ): Promise<{ removed: true } | null> {
-  if (!(await canViewSession(db, me, sessionId))) return null
+  const session = await canViewSession(db, me, sessionId)
+  if (!session) return null
   await db
     .delete(reactions)
     .where(and(eq(reactions.userId, me), eq(reactions.sessionId, sessionId)))
+  publish(session.userId, { type: 'feed' })
   return { removed: true }
 }
 

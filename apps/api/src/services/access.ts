@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '../db/client'
 import { sessions } from '../db/schema'
-import { areFriends } from './friends'
+import { areFriends } from './friend-graph'
 
 export type SessionRecord = typeof sessions.$inferSelect
 
