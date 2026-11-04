@@ -16,7 +16,7 @@ Secrets to add (repo → Settings → Secrets and variables → Actions, or `gh 
 | `DEPLOY_USER` | SSH user on the server |
 | `DEPLOY_SSH_KEY` | private key of the deploy key pair |
 | `DEPLOY_PATH` | absolute app folder, e.g. `/home/<user>/apps/stryde` |
-| `DEPLOY_KNOWN_HOSTS` | output of `ssh-keyscan <zerotier-ip>` |
+| `DEPLOY_KNOWN_HOSTS` | **set 2026-11-04** (host keys of 192.168.196.25) |
 
 No variables are needed (`APP_URL` and `DOCKER_PLATFORMS` have defaults).
 
