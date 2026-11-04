@@ -221,9 +221,20 @@ docker compose up -d app
 
 Phones keep their own copy of their data and their unsynced changes, so a short server outage loses nothing: they sync when it's back.
 
-## 9. Web Push keys (v2)
+## 9. Web Push (v2)
 
-Phase 9 adds notifications. Then run `bun run gen:vapid` locally, put `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT=mailto:<you>` in the server's `.env`, and `docker compose up -d app`. iPhones only receive pushes when Stryde is installed to the Home Screen.
+Notifications work without any setup inside the app (the bell and list). Pushes to the phone's lock screen need a VAPID key pair:
+
+1. On your own machine, in the repo: `bun run gen:vapid`. It prints three lines.
+2. Put them in the server's `.env` (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT=mailto:<an address you own>`), then `docker compose up -d app`. Treat the private key like a password; don't paste it anywhere shared. Changing the key pair later invalidates every device's subscription (they re-subscribe on next open).
+3. Open Stryde on the phone, Settings → Notifications → **Enable notifications**, and allow the prompt.
+
+Notes:
+- **iPhone:** pushes only arrive for Stryde added to the Home Screen (iOS 16.4+), and the permission prompt only appears from the button.
+- **Delivery** goes through the browser vendor's push service (Google, Apple or Mozilla), encrypted. The server needs outbound HTTPS to them.
+- **Rest-timer alerts** are sent by the app container itself (an in-process loop). If the container restarts during a rest, alerts more than 30 s overdue are dropped.
+- **Live updates** use one long-lived `GET /api/events` connection per open app. Cloudflare's idle limit is ~100 s; the server sends a heartbeat every 25 s.
+- Check it's configured: `curl -s https://stryde.obnsolutions.org/api/config` shows `vapidPublicKey` (null when push is off).
 
 ## 10. Troubleshooting
 

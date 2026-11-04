@@ -1,44 +1,43 @@
 # Blockers
 
-What stops Stryde from going live, as of 2026-11-03. None of these are code bugs: v1 (Phases 0–7) is built and tested locally. Step-by-step instructions are in [`docs/owner-checklist.md`](docs/owner-checklist.md) and [`docs/deploy-home-server.md`](docs/deploy-home-server.md).
+What is still open, as of 2026-11-04. Nothing here blocks the app running: Phases 0–8 are live at https://stryde.obnsolutions.org and deploys are green. Step-by-step instructions are in [`docs/owner-checklist.md`](docs/owner-checklist.md) and [`docs/deploy-home-server.md`](docs/deploy-home-server.md).
 
-## 1. ~~First deploy fails: no GitHub secrets~~ (done 2026-11-04)
+## Done
 
-Deploy run [#40649038374](https://github.com/raves21/stryde/actions/runs/40649038374) failed at **Join ZeroTier** because the repo had no secrets. All seven are now set (`ZEROTIER_NETWORK_ID`, `ZEROTIER_CENTRAL_TOKEN`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH` = `/home/obn/projects/stryde`, `DEPLOY_KNOWN_HOSTS`). The `ZEROTIER_CENTRAL_TOKEN` was pasted into a chat, so consider rotating it. Not yet re-run: the next Deploy should get past Join ZeroTier, then needs section 2.
+GitHub secrets, home server (Docker, SSH key, ZeroTier, `/home/obn/projects/stryde`), cloudflared (`cloudflared-obn`, hostname → `localhost:8173`, DNS record), public GHCR package, first deploys (v1, then Phase 8), deploy health check moved to the server (Cloudflare answers GitHub's runners with 403).
 
-## 2. Home server not confirmed set up
+## 1. Phase 9 (notifications) is built locally, not live
 
-The deploy needs, on the server:
+The code is committed locally and not pushed. To turn it on:
+- [ ] Say go to push it (CI + Deploy run automatically).
+- [ ] On your machine: `bun run gen:vapid`. Put the three `VAPID_*` lines in `/home/obn/projects/stryde/.env` on the server (`VAPID_SUBJECT=mailto:` an address you own), then `docker compose up -d app`. Keep the private key out of chats.
+- [ ] On each phone: Settings → Notifications → Enable. iPhone: only works from the Home Screen app.
+- [ ] Check each trigger on real devices: friend finishes a workout, reaction, friend request and accept, rest-timer alert with the phone locked, tapping a notification opens the right screen.
 
-- [x] Docker usable without `sudo` for `obn` (`docker ps` works over SSH)
-- [x] The deploy public key is in `authorized_keys` (key login works)
-- [x] ZeroTier joined: server is 192.168.196.25
-- [x] cloudflared runs as host services (`cloudflared-obn` is the one to use; check that its Cloudflare account has the obnsolutions.org zone), so `compose.yml` now publishes `127.0.0.1:${APP_PORT:-8173}:3000` instead of joining a Docker network. Still to check: port 8173 is free on the server (`ss -ltn | grep :8173`)
-- [ ] `/home/obn/projects/stryde/compose.yml` (the new one) and a filled-in `.env` (`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `APP_PORT`)
-- [ ] Image pull access: make the GHCR package `stryde` public, or `docker login ghcr.io` with a `read:packages` token (the package exists once a Deploy build has run; the earlier build pushed it)
+## 2. Cloudflare rules for `stryde.obnsolutions.org`
 
-## 3. Cloudflare not configured
+`sw.js` is currently served with `max-age=14400`, so phones can keep an old service worker for up to 4 hours. Scope everything to the hostname (the zone also serves your other apps):
+- [ ] Cache Rule: bypass cache for `/api/*`, `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest`, `/registerSW.js`
+- [ ] Cache Rule: Browser TTL = Respect origin TTL (not the zone-wide setting)
+- [ ] Configuration Rule: Rocket Loader off, Email Address Obfuscation off, Always Use HTTPS on
+- [ ] Verify: `curl -sI https://stryde.obnsolutions.org/sw.js | grep -i cache-control` shows `no-cache`
 
-- [ ] Public hostname `stryde.obnsolutions.org` → HTTP `localhost:8173` on the `cloudflared-obn` tunnel (the domain must be a zone in the Cloudflare account that owns that tunnel)
-- [ ] Cache rules: bypass for `/api/*`, `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest`, `/registerSW.js`
-- [ ] Rocket Loader off, Email Address Obfuscation off, Always Use HTTPS on
+## 3. Real Google sign-in untested (last Phase 1 item)
 
-## 4. Real Google sign-in untested (last Phase 1 item)
+- [ ] Create the OAuth client (steps in the chat history and `docs/deploy-home-server.md` §4), put `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the server `.env`, `docker compose up -d app`, try "Continue with Google". Optional: email/username sign-in works without it.
 
-Needs a Google Cloud OAuth client (web application) with the origins and redirect URIs from the checklist §7, then `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in the server `.env`. Optional for launch: email/username sign-in works.
+## 4. Checks after deploys
 
-## 5. Device checks after the first deploy
+- [ ] Rollback test: run Deploy with `tag` = an earlier commit SHA, then with it empty
+- [ ] Install on Android (Chrome) and iPhone (Safari), log a workout offline, reconnect
+- [ ] Database backup cron job (`docker/backup.sh`, `docs/deploy-home-server.md` §8) and copy the dumps off the server
+- [ ] Optional: rotate the ZeroTier API token (it was pasted into a chat)
 
-- [ ] `https://stryde.obnsolutions.org/api/health` shows the latest commit SHA
-- [ ] Rollback test (run Deploy with `tag` = an earlier SHA, then with it empty)
-- [ ] Install on Android (Chrome) and iPhone (Safari), and log a workout offline then reconnect
-- [ ] Database backup cron job (`docker/backup.sh`, see `docs/deploy-home-server.md` §8)
+## 5. Decisions waiting on the owner
 
-## 6. Decisions waiting on the owner
-
-- [ ] **Phase 9 (notifications, v2)**: start it? It needs HTTPS, VAPID keys on the server and a real phone, so it can't be fully tested before the first deploy.
+- [ ] Phase 10 (VPS deployment guide, docs only): wanted?
 
 ## Housekeeping (not blocking)
 
-- Phase 8 (social) is built and tested locally but not pushed. Pushed 2026-11-03: backup script, ZeroTier bump, inline PR chip. Deploy will fail at "Join ZeroTier" again until blocker 1 is fixed; CI should pass.
-- The ZeroTier action is now `@v1.0.3`. Its post step (`util/post@main`) still targets an old Node runtime, so the deprecation warning stays; GitHub forces it onto Node 24 and it doesn't fail the run.
+- The ZeroTier action is `@v1.0.3`. Its post step still targets an old Node runtime, so a deprecation warning stays; GitHub forces Node 24 and it doesn't fail the run.
+- The deploy's public-URL check is informational and logs a 403 from GitHub's runners; that is expected.

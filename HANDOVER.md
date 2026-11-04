@@ -2,18 +2,19 @@
 
 Context for the next session working on Stryde. Read this first, then `PROGRESS.md` (the source of truth for status and decisions); the reading order in `AGENTS.md` / `CLAUDE.md` still applies.
 
-## Where things stand (2026-11-03)
+## Where things stand (2026-11-04)
 
-- **Phases 0–8 are implemented**: v1 (auth, local-first sync, exercises/templates, active workout with inline PR chip, history/calendar/charts/PRs, PWA, Docker + CI/CD + deploy guide) plus Phase 8 social (friends, feed, reactions; online-only via TanStack Query). Phase 8 is built and tested locally but not pushed or deployed yet.
-- **Phase 7 acceptance is blocked on the owner**, not on code. `main` was pushed; **CI #1 passed** on GitHub; **Deploy #1 failed** in the `deploy` job after ~20 s (the `build` job ran ~2 min, so the image is most likely in GHCR). Most likely cause: no secrets set yet. Logs need a signed-in look: https://github.com/raves21/stryde/actions/runs/40649038374
-- The owner's remaining steps are in **`docs/owner-checklist.md`** (server, deploy key, GitHub secrets, Cloudflare, first deploy, rollback test, phone installs, Google OAuth). Full instructions: `docs/deploy-home-server.md`.
-- Local `main` is **1 commit ahead** of `origin/main` (`3fb7cca`, a `PROGRESS.md` update), plus this file. Push only when the owner asks.
-- **Next:** help the owner get the first deploy green (the failure is missing GitHub secrets, see `BLOCKERS.md`), and Phase 9 (notifications) when they say go. Phase 9 needs HTTPS, VAPID keys and a real phone, so it is partly blocked by the deploy.
+- **Phases 0–9 are implemented.** v1 (auth, local-first sync, exercises/templates, active workout with inline PR chip, history/calendar/charts/PRs, PWA, Docker + CI/CD) and v2: Phase 8 social (friends, feed, reactions) and Phase 9 notifications (Web Push, in-app list + bell, SSE live updates, rest-timer push).
+- **Phases 0–8 are live** at https://stryde.obnsolutions.org on the owner's home server (cloudflared host service `cloudflared-obn` → `127.0.0.1:8173`). Every push to `main` runs CI, then Deploy (build → GHCR → ZeroTier + SSH → compose up → health check on the server). Deploys are green.
+- **Phase 9 is built and tested locally; not pushed or deployed.** It needs the owner to add `VAPID_*` keys to the server `.env` (`bun run gen:vapid`, `docs/deploy-home-server.md` §9) and test on real phones (Android Chrome, iPhone Home Screen app). Push delivery itself can't be exercised in tests, only with a mocked sender and a Bun-side encryption check.
+- Still open for the owner: Cloudflare cache rules for `stryde.obnsolutions.org` (`sw.js` is cached 4 h until set), real Google sign-in, database backup cron (`docker/backup.sh`), rollback test, phone installs. See `BLOCKERS.md`.
+- **Next:** push Phase 9 when the owner says so, help them enable and verify push on their phones, then Phase 10 (VPS guide, docs only) if wanted.
 
 ## Open decisions (ask the owner)
 
-1. **When to start Phase 9** (and whether to push/deploy Phase 8 before it).
-2. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
+1. **Push Phase 9** now or after they have generated the VAPID keys.
+2. **Phase 10** (VPS deployment guide): wanted?
+3. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
 
 ## Running it
 
@@ -27,7 +28,7 @@ bun run e2e                                                           # Playwrig
 
 - **Port 3000 is taken** on this machine by the owner's ticketing Nuxt dev server (`~/code_projects/frontend/vue/ticketing-client`). Don't stop it; run the Stryde API on 3001 as above. The ticketing project's Postgres has also held port 5432 before; if the Stryde DB container isn't running, ask before touching the other project.
 - Local dev accounts from browser checks all use the password `correct-horse-battery`: `p5_mvrnykhd` (6 workouts over 10 weeks, good for charts), `p4_mvrk2ixr` (template + 2 workouts), `p3_mvrj78az` (template with a superset).
-- Last full run: 310 unit/integration tests + 4 e2e green, lint and typecheck clean.
+- Last full run: 347 unit/integration tests + 5 e2e green, lint and typecheck clean.
 
 ## Gotchas learned the hard way
 
@@ -47,6 +48,8 @@ bun run e2e                                                           # Playwrig
 
 - `packages/shared/src/` — `schemas/` (row + sync payload Zod), `calc/` (e1RM, volume, best set, `detectPRs`, `prTimeline`, `computeAllPRs`, `seriesForChart`), `units.ts`, `constants.ts`.
 - `apps/api/src/` — `app.ts` (`createApp(staticDir)`: API + SPA static serving), `services/sync.ts` (push/pull), `services/session-effects.ts` (`onSessionsChanged` → PR recompute + feed events; Phase 9 notifications go through `services/notify.ts`), `services/friends.ts` / `access.ts` / `feed.ts` / `reactions.ts` / `session-detail.ts` (Phase 8), `static.ts`, `db/migrations/0001_sync_infra.sql` (hand-written, never regenerate).
+- `apps/web/src/features/notifications/` — Phase 9 UI: `push.ts` (support/iOS detection, subscribe/unsubscribe, `keyToBytes`), `components/enable-push.tsx`, `notification-bell.tsx`, `events-runtime.tsx` (SSE), `push-runtime.tsx` (resubscribe, NAVIGATE messages), `rest-push.ts`; route `/notifications` and `/settings/notifications`. `sw.ts` handles `push`, `notificationclick`, `pushsubscriptionchange`.
+- `apps/api/src/services/` Phase 9: `notify.ts` (settings gates, triggers, background delivery; tests await `settlePushes`), `push.ts` (web-push, swappable sender for tests), `events.ts` (SSE hub), `rest-timer.ts` (+ loop started in `index.ts`), `notifications.ts` (list), `friend-graph.ts` (friend ids, split out to avoid an import cycle).
 - `apps/web/src/features/social/` — Phase 8 UI: `api.ts` (fetch + `ApiError`), `use-social.ts` (TanStack Query hooks, optimistic `useReact`), `reactions.ts` (`toggleReaction`), components (feed card, reaction bar/picker, friend rows, friend session detail). The query client (`lib/query-client.ts`) is in-memory only.
 - `apps/web/src/` —
   - `db/repositories/` the only write path for own data (`core.ts`: `mutate`/`Writer`; `supersets.ts`; sessions/templates/exercises/sets/settings). Build new rows from the DB inside the transaction, never from screen state.

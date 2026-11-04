@@ -221,10 +221,11 @@ Social data is fetched with TanStack Query using the default **in-memory** cache
 | `POST /api/friends/requests/:id/accept` / `decline`, `DELETE /api/friends/:userId` | accept/decline only by the addressee of a pending request (else 404). `DELETE` removes a friend, or cancels my own pending request, and drops mutes between the two. A request to someone who already asked me accepts it; a declined pair can ask again |
 | `PUT/DELETE /api/friends/:userId/mute` | |
 | `GET /api/users/search?q=` | prefix username match, max 10, never the caller. Returns only `username`, `displayName`, `avatarUrl` plus my `relation` to them (`none\|friend\|outgoing\|incoming`) |
-| `GET /api/notifications`, `POST /api/notifications/read` | in-app list |
-| `POST /api/push/subscribe`, `DELETE /api/push/subscribe` | Web Push subscriptions |
-| `POST /api/rest-timer` `{ sessionId, fireAt }`, `DELETE /api/rest-timer` | schedule/cancel rest push |
-| `GET /api/events` | SSE stream |
+| `GET /api/notifications?before=&limit=30`, `POST /api/notifications/read` `{ ids? }` | in-app list, newest first, with `unreadCount` and an opaque `nextCursor`; `read` marks the given ids (or every unread one when omitted) read |
+| `GET /api/config` | `{ vapidPublicKey }` (null when push isn't configured); no auth |
+| `POST /api/push/subscribe` (`PushSubscription.toJSON()`), `DELETE /api/push/subscribe` `{ endpoint }` | Web Push subscriptions. An endpoint is unique: subscribing again, or from another account on the same browser, moves it to the caller. Delete only removes your own |
+| `POST /api/rest-timer` `{ sessionId, fireAt }`, `DELETE /api/rest-timer` | schedule/cancel rest push. POST replaces the caller's pending one; needs an active session of the caller (else 404) and `fireAt` at most 1 h ahead. The server loop sends due ones every 5 s and drops any more than 30 s late |
+| `GET /api/events` | SSE stream (cookie auth). Events: `ready` on connect, `sync` `{ origin }` (a push from another device; `origin` is that device's `clientId`), `feed` (a friend's feed event changed, or a reaction on your session), `notification`. Hints only, no data. Heartbeat comment every 25 s |
 
 ---
 

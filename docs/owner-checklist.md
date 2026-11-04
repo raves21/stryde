@@ -72,6 +72,13 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 
 - [ ] **Phase 9 (notifications)**: start it? It needs HTTPS, VAPID keys on the server and a real phone, so full testing waits for the first deploy. (Phase 8, social, is built and tested locally; it ships with the next push.)
 
+## 9. Notifications (Phase 9) [§9 of the deploy guide]
+
+- [ ] On your machine: `bun run gen:vapid`; put the three `VAPID_*` lines in the server's `.env` (`VAPID_SUBJECT=mailto:` an address you own); `docker compose up -d app`. Don't paste the private key anywhere shared.
+- [ ] `curl -s https://stryde.obnsolutions.org/api/config` shows a `vapidPublicKey`.
+- [ ] Android and iPhone (Home Screen app): Settings → Notifications → **Enable notifications**.
+- [ ] Check: a friend finishes a workout, a reaction, a friend request and accept, a rest-timer alert with the phone locked, and that tapping each notification opens the right screen.
+
 ## Notes
 
 - Local `docker build` stalls on this machine (Docker's build network, likely ZeroTier's MTU); use `docker build --network host -f docker/Dockerfile .` if you build by hand. GitHub's runners aren't affected.
