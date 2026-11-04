@@ -40,7 +40,7 @@ Everything in the repo for v1 (Phases 0–7) is built and tested locally. These 
 
 ## 4. Cloudflare [§3]
 
-- [ ] Zero Trust → Networks → Tunnels → your tunnel → Public Hostname: `stryde.obnsolutions.org` → **HTTP** `localhost:8173`, on the tunnel served by `cloudflared-ravesdev`.
+- [ ] Zero Trust → Networks → Tunnels → your tunnel → Public Hostname: `stryde.obnsolutions.org` → **HTTP** `localhost:8173`, on the tunnel served by `cloudflared-obn`.
 - [ ] Caching → Cache Rules: for hostname `stryde.obnsolutions.org`, **bypass cache** when the path starts with `/api/` or is `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest`, `/registerSW.js`.
 - [ ] Speed → Optimization: **Rocket Loader off**.
 - [ ] Scrape Shield: **Email Address Obfuscation off**.

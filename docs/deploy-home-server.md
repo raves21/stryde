@@ -26,7 +26,7 @@ Files in the repo:
 
 - The server runs Docker Engine with the Compose plugin (`docker compose version`), on **amd64** (the image is built for `linux/amd64`; change the `DOCKER_PLATFORMS` variable if that ever changes).
 - The server is a member of your ZeroTier network and you know its ZeroTier IP (`zerotier-cli listnetworks` on the server, or ZeroTier Central).
-- `cloudflared` runs on the host (here: the `cloudflared-ravesdev` systemd service) and serves a tunnel you manage in Cloudflare Zero Trust.
+- `cloudflared` runs on the host (here: the `cloudflared-obn` systemd service) and serves a tunnel you manage in Cloudflare Zero Trust.
 - The repository is on GitHub (`raves21/stryde`) with Actions enabled.
 
 ## 2. One-time server setup
