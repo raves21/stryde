@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { format, formatDistanceToNow } from 'date-fns'
-import { Download, Dumbbell, LayoutList, RefreshCw, UsersRound } from 'lucide-react'
+import { Bell, Download, Dumbbell, LayoutList, RefreshCw, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Screen } from '@/components/app/screen'
 import { SectionLabel } from '@/components/app/section-label'
@@ -89,6 +89,7 @@ function ProfilePage() {
         <SectionLabel>Social</SectionLabel>
         <nav className="overflow-hidden rounded-2xl border border-border bg-surface">
           <NavRow to="/friends" icon={UsersRound} label="Friends" />
+          <NavRow to="/settings/notifications" icon={Bell} label="Notifications" />
         </nav>
       </section>
 

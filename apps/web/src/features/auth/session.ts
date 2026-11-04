@@ -1,4 +1,5 @@
 import { clearCurrentUser, clearLocalData, getCurrentUser, setCurrentUser } from '@/db/meta'
+import { releaseSubscription } from '@/features/notifications/push'
 import { fetchMe, type Me } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { queryClient } from '@/lib/query-client'
@@ -52,6 +53,8 @@ export async function forgetSession(): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
+  // Needs the session cookie, so before it is cleared.
+  await releaseSubscription()
   await authClient.signOut()
   // A pull finishing after the wipe would leave rows without an owner.
   await stopSync()

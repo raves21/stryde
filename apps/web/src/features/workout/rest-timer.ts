@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/db'
 import { getMeta, setMeta } from '@/db/meta'
+import { syncRestPush } from '@/features/notifications/rest-push'
 
 // The rest timer is a timestamp in local meta (not synced), so it survives reloads and
 // app kills (AGENTS.md hard rule 7: timers come from timestamps, never counters).
@@ -15,15 +16,15 @@ export type RestTimer = {
 
 const KEY = 'workout.restTimer'
 
-/**
- * Phase 9 hooks the background rest-timer push in here (POST/DELETE /api/rest-timer).
- */
-export function onRestTimerChanged(_endsAt: string | null): void {}
+/** Keep the server's background rest-timer push in step with the local timer. */
+export function onRestTimerChanged(sessionId: string, endsAt: string | null): void {
+  void syncRestPush(sessionId, endsAt)
+}
 
 export async function startRestTimer(timer: Omit<RestTimer, 'endsAt'>) {
   const endsAt = new Date(Date.now() + timer.durationSec * 1000).toISOString()
   await setMeta(KEY, { ...timer, endsAt } satisfies RestTimer)
-  onRestTimerChanged(endsAt)
+  onRestTimerChanged(timer.sessionId, endsAt)
 }
 
 /** ±15 s buttons; never below now. */
@@ -38,7 +39,7 @@ export async function adjustRestTimer(deltaSec: number) {
     endsAt,
     durationSec: Math.max(1, timer.durationSec + deltaSec),
   } satisfies RestTimer)
-  onRestTimerChanged(endsAt)
+  onRestTimerChanged(timer.sessionId, endsAt)
 }
 
 /** Skip, or stop when its set is un-ticked (pass the set id), or on finish/discard. */
@@ -46,7 +47,7 @@ export async function clearRestTimer(onlyForSetId?: string) {
   const timer = await getMeta<RestTimer>(KEY)
   if (!timer || (onlyForSetId && timer.setId !== onlyForSetId)) return
   await db.meta.delete(KEY)
-  onRestTimerChanged(null)
+  onRestTimerChanged(timer.sessionId, null)
 }
 
 export function useRestTimer(): RestTimer | null {

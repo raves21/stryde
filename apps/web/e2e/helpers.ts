@@ -16,7 +16,12 @@ export async function signUp(page: Page): Promise<string> {
   await page.getByRole('heading', { name: 'Units' }).waitFor()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Done' }).click()
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+  // Browsers that can receive push get a notifications step; skip it.
+  const notNow = page.getByRole('button', { name: 'Not now' })
+  const today = page.getByRole('heading', { name: 'Today' })
+  await expect(notNow.or(today)).toBeVisible()
+  if (await notNow.isVisible()) await notNow.click()
+  await expect(today).toBeVisible()
   return username
 }
 
@@ -37,4 +42,19 @@ export async function serverWorkouts(page: Page) {
       )
       return { name: s.name, sets: sets.map((x) => [x.weightKg, x.reps, x.rir, x.targetKind]) }
     })
+}
+
+/** Make `requester` and `accepter` friends through the API (same-origin, own cookies). */
+export async function befriend(requester: Page, accepter: Page, accepterUsername: string) {
+  const sent = await requester.request.post('/api/friends/requests', {
+    data: { username: accepterUsername },
+  })
+  expect(sent.ok()).toBe(true)
+  const { incoming } = (await (await accepter.request.get('/api/friends/requests')).json()) as {
+    incoming: { id: string }[]
+  }
+  const accepted = await accepter.request.post(`/api/friends/requests/${incoming[0]?.id}/accept`, {
+    data: {},
+  })
+  expect(accepted.ok()).toBe(true)
 }

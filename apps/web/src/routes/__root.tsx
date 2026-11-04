@@ -2,6 +2,8 @@ import { createRootRoute, Outlet, redirect, useRouter } from '@tanstack/react-ro
 import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { resolveSession, revalidateSession } from '@/features/auth/session'
+import { EventsRuntime } from '@/features/notifications/components/events-runtime'
+import { PushRuntime } from '@/features/notifications/components/push-runtime'
 import { UpdatePrompt } from '@/features/pwa/components/update-prompt'
 import { SyncRuntime } from '@/features/sync/sync-runtime'
 
@@ -52,6 +54,8 @@ function RootLayout() {
         // Keyed by user so switching accounts restarts sync from a clean state.
         <SyncRuntime key={user.user.id}>
           <Outlet />
+          <EventsRuntime />
+          <PushRuntime />
         </SyncRuntime>
       ) : (
         <Outlet />

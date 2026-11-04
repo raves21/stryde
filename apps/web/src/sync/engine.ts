@@ -80,7 +80,8 @@ export function createSyncEngine({
   }
 }
 
-async function clientId(db: StrydeDb): Promise<string> {
+/** This device's sync client id (also the `origin` of `sync` events it caused). */
+export async function clientId(db: StrydeDb): Promise<string> {
   const existing = await getMeta<string>(META_CLIENT_ID, db)
   if (existing) return existing
   const id = newId()

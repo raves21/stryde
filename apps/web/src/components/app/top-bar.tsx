@@ -2,6 +2,7 @@ import { useRouter } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { NotificationBell } from '@/features/notifications/components/notification-bell'
 import { SyncIndicator } from '@/features/sync/components/sync-indicator'
 
 /** Screen title (Barlow Condensed 28) with the sync indicator on the right (UI_DESIGN.md §3). */
@@ -34,6 +35,7 @@ export function TopBar({
         {title}
       </h1>
       {actions}
+      {!back && <NotificationBell />}
       <SyncIndicator />
     </header>
   )

@@ -1,7 +1,7 @@
 import { db as defaultDb } from '@/db/db'
 import { getMeta } from '@/db/meta'
 import { onLocalWrite } from '@/db/repositories/core'
-import { createSyncEngine, META_LAST_SYNC_AT } from './engine'
+import { clientId, createSyncEngine, META_LAST_SYNC_AT } from './engine'
 import { resetSyncState, setSyncState } from './status'
 import { httpTransport } from './transport'
 
@@ -20,6 +20,9 @@ let stopActive: (() => Promise<void>) | null = null
 export function requestSync() {
   requestSyncImpl?.()
 }
+
+/** Id this device pushes under; the server tags `sync` events with it. */
+export const getSyncOrigin = () => clientId(defaultDb)
 
 /** Stop syncing and wait for a run in progress (before wiping the local DB). */
 export async function stopSync() {

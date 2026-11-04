@@ -17,12 +17,14 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppFeedRouteImport } from './routes/_app/feed'
 import { Route as AppFriendsRouteImport } from './routes/_app/friends'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
+import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppProgressRouteImport } from './routes/_app/progress'
 import { Route as WorkoutActiveRouteImport } from './routes/workout/active'
 import { Route as AppExercisesIndexRouteImport } from './routes/_app/exercises/index'
 import { Route as AppExercisesIdRouteImport } from './routes/_app/exercises/$id'
 import { Route as AppSettingsInstallRouteImport } from './routes/_app/settings/install'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
 import { Route as AppSettingsSyncRouteImport } from './routes/_app/settings/sync'
 import { Route as AppTemplatesIndexRouteImport } from './routes/_app/templates/index'
 import { Route as AppTemplatesIdRouteImport } from './routes/_app/templates/$id'
@@ -69,6 +71,11 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -99,6 +106,12 @@ const AppSettingsInstallRoute = AppSettingsInstallRouteImport.update({
   path: '/settings/install',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppSettingsSyncRoute = AppSettingsSyncRouteImport.update({
   id: '/settings/sync',
   path: '/settings/sync',
@@ -138,11 +151,13 @@ export interface FileRoutesByFullPath {
   '/feed': typeof AppFeedRoute
   '/friends': typeof AppFriendsRoute
   '/history': typeof AppHistoryRoute
+  '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/exercises/$id': typeof AppExercisesIdRoute
   '/settings/install': typeof AppSettingsInstallRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/sync': typeof AppSettingsSyncRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
@@ -158,12 +173,14 @@ export interface FileRoutesByTo {
   '/feed': typeof AppFeedRoute
   '/friends': typeof AppFriendsRoute
   '/history': typeof AppHistoryRoute
+  '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/': typeof AppIndexRoute
   '/exercises/$id': typeof AppExercisesIdRoute
   '/settings/install': typeof AppSettingsInstallRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/sync': typeof AppSettingsSyncRoute
   '/templates/$id': typeof AppTemplatesIdRoute
   '/templates/new': typeof AppTemplatesNewRoute
@@ -181,12 +198,14 @@ export interface FileRoutesById {
   '/_app/feed': typeof AppFeedRoute
   '/_app/friends': typeof AppFriendsRoute
   '/_app/history': typeof AppHistoryRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/progress': typeof AppProgressRoute
   '/workout/active': typeof WorkoutActiveRoute
   '/_app/': typeof AppIndexRoute
   '/_app/exercises/$id': typeof AppExercisesIdRoute
   '/_app/settings/install': typeof AppSettingsInstallRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_app/settings/sync': typeof AppSettingsSyncRoute
   '/_app/templates/$id': typeof AppTemplatesIdRoute
   '/_app/templates/new': typeof AppTemplatesNewRoute
@@ -205,11 +224,13 @@ export interface FileRouteTypes {
     | '/feed'
     | '/friends'
     | '/history'
+    | '/notifications'
     | '/profile'
     | '/progress'
     | '/workout/active'
     | '/exercises/$id'
     | '/settings/install'
+    | '/settings/notifications'
     | '/settings/sync'
     | '/templates/$id'
     | '/templates/new'
@@ -225,12 +246,14 @@ export interface FileRouteTypes {
     | '/feed'
     | '/friends'
     | '/history'
+    | '/notifications'
     | '/profile'
     | '/progress'
     | '/workout/active'
     | '/'
     | '/exercises/$id'
     | '/settings/install'
+    | '/settings/notifications'
     | '/settings/sync'
     | '/templates/$id'
     | '/templates/new'
@@ -247,12 +270,14 @@ export interface FileRouteTypes {
     | '/_app/feed'
     | '/_app/friends'
     | '/_app/history'
+    | '/_app/notifications'
     | '/_app/profile'
     | '/_app/progress'
     | '/workout/active'
     | '/_app/'
     | '/_app/exercises/$id'
     | '/_app/settings/install'
+    | '/_app/settings/notifications'
     | '/_app/settings/sync'
     | '/_app/templates/$id'
     | '/_app/templates/new'
@@ -330,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profile': {
       id: '/_app/profile'
       path: '/profile'
@@ -370,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/install'
       fullPath: '/settings/install'
       preLoaderRoute: typeof AppSettingsInstallRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings/sync': {
@@ -421,11 +460,13 @@ interface AppRouteChildren {
   AppFeedRoute: typeof AppFeedRoute
   AppFriendsRoute: typeof AppFriendsRoute
   AppHistoryRoute: typeof AppHistoryRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppProfileRoute: typeof AppProfileRoute
   AppProgressRoute: typeof AppProgressRoute
   AppIndexRoute: typeof AppIndexRoute
   AppExercisesIdRoute: typeof AppExercisesIdRoute
   AppSettingsInstallRoute: typeof AppSettingsInstallRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
   AppSettingsSyncRoute: typeof AppSettingsSyncRoute
   AppTemplatesIdRoute: typeof AppTemplatesIdRoute
   AppTemplatesNewRoute: typeof AppTemplatesNewRoute
@@ -437,11 +478,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppFeedRoute: AppFeedRoute,
   AppFriendsRoute: AppFriendsRoute,
   AppHistoryRoute: AppHistoryRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppProfileRoute: AppProfileRoute,
   AppProgressRoute: AppProgressRoute,
   AppIndexRoute: AppIndexRoute,
   AppExercisesIdRoute: AppExercisesIdRoute,
   AppSettingsInstallRoute: AppSettingsInstallRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
   AppSettingsSyncRoute: AppSettingsSyncRoute,
   AppTemplatesIdRoute: AppTemplatesIdRoute,
   AppTemplatesNewRoute: AppTemplatesNewRoute,

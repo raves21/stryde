@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { pushSupport } from '@/features/notifications/push'
 import { InstallStep } from '@/features/onboarding/install-step'
+import { NotificationsStep } from '@/features/onboarding/notifications-step'
 import { ProgressDots } from '@/features/onboarding/progress-dots'
 import { UnitsStep } from '@/features/onboarding/units-step'
 import { UsernameStep } from '@/features/onboarding/username-step'
@@ -9,15 +11,19 @@ export const Route = createFileRoute('/onboarding')({
   component: OnboardingPage,
 })
 
-type Step = 'username' | 'units' | 'install'
+type Step = 'username' | 'units' | 'install' | 'notifications'
 
 function OnboardingPage() {
   const { user } = Route.useRouteContext()
   const navigate = useNavigate()
   // Decide the steps once: the username step stays in the list after it's done.
-  const [steps] = useState<Step[]>(() =>
-    user?.needsOnboarding ? ['username', 'units', 'install'] : ['units', 'install'],
-  )
+  const [steps] = useState<Step[]>(() => [
+    ...(user?.needsOnboarding ? (['username'] as const) : []),
+    'units',
+    'install',
+    // Browsers without push have nothing to ask for.
+    ...(pushSupport() === 'unsupported' ? [] : (['notifications'] as const)),
+  ])
   const [index, setIndex] = useState(0)
   const step = steps[index]
 
@@ -32,6 +38,7 @@ function OnboardingPage() {
       {step === 'username' && <UsernameStep onDone={next} />}
       {step === 'units' && <UnitsStep initial={user?.settings.unit ?? 'kg'} onDone={next} />}
       {step === 'install' && <InstallStep onDone={next} />}
+      {step === 'notifications' && <NotificationsStep onDone={next} />}
     </main>
   )
 }
