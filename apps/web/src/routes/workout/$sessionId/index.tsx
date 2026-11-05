@@ -9,7 +9,7 @@ import { Screen } from '@/components/app/screen'
 import { SectionLabel } from '@/components/app/section-label'
 import { StatTile } from '@/components/app/stat-tile'
 import { TopBar } from '@/components/app/top-bar'
-import { SetBadge } from '@/components/sets/set-badge'
+import { SetTable } from '@/components/sets/set-table'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -25,7 +25,6 @@ import { FriendSessionPage } from '@/features/social/components/friend-session-p
 import { formatPR } from '@/features/workout/format-pr'
 import { useSessionTree } from '@/features/workout/use-workout'
 import type { Training } from '@/lib/training'
-import { formatSetLine } from '@/lib/workout'
 
 export const Route = createFileRoute('/workout/$sessionId/')({
   component: SessionDetailPage,
@@ -138,11 +137,13 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
       <section className="flex flex-col gap-3">
         {tree.exercises.map(({ row, exercise, sets }) => {
           const done = sets.filter((s) => s.completedAt !== null)
-          let working = 0
+          const prSetIds = new Set(
+            done.filter((s) => (training.prsBySet.get(s.id) ?? []).length > 0).map((s) => s.id),
+          )
           return (
             <article
               key={row.id}
-              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4"
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
             >
               <header className="flex items-center gap-2">
                 {row.supersetGroup && (
@@ -162,32 +163,12 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
                   <span className="font-semibold">Unknown exercise</span>
                 )}
               </header>
-              <ol className="flex flex-col gap-1">
-                {done.map((set) => {
-                  if (set.setType === 'working') working += 1
-                  const prs = training.prsBySet.get(set.id) ?? []
-                  return (
-                    <li key={set.id} className="flex items-center gap-3">
-                      <SetBadge
-                        setType={set.setType}
-                        number={working}
-                        targetKind={set.targetKind}
-                        targetRir={null}
-                        className="w-8 flex-row"
-                      />
-                      <span className="tnum flex-1">
-                        {formatSetLine(set, exercise?.type ?? 'weighted', unit)}
-                      </span>
-                      {prs.length > 0 && (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-pr">
-                          <Trophy className="size-4" aria-hidden />
-                          <span className="sr-only">Personal record</span>
-                        </span>
-                      )}
-                    </li>
-                  )
-                })}
-              </ol>
+              <SetTable
+                sets={done}
+                type={exercise?.type ?? 'weighted'}
+                unit={unit}
+                prSetIds={prSetIds}
+              />
             </article>
           )
         })}

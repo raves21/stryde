@@ -183,7 +183,7 @@ Full screen, tab bar hidden, mini-bar not shown.
 - Primary: "Save workout".
 
 ### 5.6 Session detail
-Header: name, date, time range, duration, share status icon (eye / eye-off). Stats tiles. List of exercises with completed sets as compact rows (`80 kg × 8 @1`, `F` badges, 🏆 marks). Notes. Owner actions: Edit, Share toggle, Delete. Friend view (v2): owner avatar + name at top, reactions bar at bottom, no edit actions.
+Header: name, date, time range, duration, share status icon (eye / eye-off). Stats tiles. List of exercises, each card a set table (set badge `W`/1/2…, weight, reps or time, RIR or `F`, 🏆 on PR sets; the same `SetTable` as the exercise history cards). A friend's view has no per-set 🏆 (only the PR cards at the top). Notes. Owner actions: Edit, Share toggle, Delete. Friend view (v2): owner avatar + name at top, reactions bar at bottom, no edit actions.
 
 ### 5.7 History
 Reverse-chronological list grouped by month (sticky month headers). Each item: date block (day number big + weekday), workout name, duration, sets, PR badge count.

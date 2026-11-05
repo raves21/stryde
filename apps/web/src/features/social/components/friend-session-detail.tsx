@@ -6,11 +6,10 @@ import { SectionLabel } from '@/components/app/section-label'
 import { StatTile } from '@/components/app/stat-tile'
 import { TopBar } from '@/components/app/top-bar'
 import { UserAvatar } from '@/components/app/user-avatar'
-import { SetBadge } from '@/components/sets/set-badge'
+import { SetTable } from '@/components/sets/set-table'
 import { formatSpan } from '@/features/progress/use-training'
 import { useUnit } from '@/features/settings/use-settings'
 import { formatPR } from '@/features/workout/format-pr'
-import { formatSetLine } from '@/lib/workout'
 import { ReactionBar } from './reaction-bar'
 
 /** A friend's shared workout, read-only, with their header and reactions (§5.6 friend view). */
@@ -64,11 +63,10 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
 
       <section className="flex flex-col gap-3">
         {session.exercises.map((exercise) => {
-          let working = 0
           return (
             <article
               key={exercise.id}
-              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-4"
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
             >
               <header className="flex items-center gap-2">
                 {exercise.supersetGroup && (
@@ -78,23 +76,7 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
                 )}
                 <h2 className="truncate font-semibold">{exercise.name}</h2>
               </header>
-              <ol className="flex flex-col gap-1">
-                {exercise.sets.map((set) => {
-                  if (set.setType === 'working') working += 1
-                  return (
-                    <li key={set.id} className="flex items-center gap-3">
-                      <SetBadge
-                        setType={set.setType}
-                        number={working}
-                        targetKind={set.targetKind}
-                        targetRir={null}
-                        className="w-8 flex-row"
-                      />
-                      <span className="tnum flex-1">{formatSetLine(set, exercise.type, unit)}</span>
-                    </li>
-                  )
-                })}
-              </ol>
+              <SetTable sets={exercise.sets} type={exercise.type} unit={unit} />
             </article>
           )
         })}

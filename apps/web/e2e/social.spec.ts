@@ -52,7 +52,9 @@ test('friends see each other’s workouts and reactions; offline shows an offlin
   // Tap through to the friend's session detail: read-only, with Ann's sets.
   await card.getByRole('link').click()
   await expect(bob.getByRole('heading', { name: 'Bench Press' })).toBeVisible()
-  await expect(bob.getByText('60 kg × 5')).toBeVisible()
+  // Ann's first set (60 kg × 5) in the set table.
+  const firstSet = bob.getByRole('row').filter({ hasText: /^1\s*60\s*5/ })
+  await expect(firstSet).toBeVisible()
   await expect(bob.getByRole('button', { name: /1 fire reactions/ })).toBeVisible()
 
   // Ann sees her own card ("You") with Bob's reaction.
