@@ -1,5 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { NewRow } from '@/db/repositories/core'
+import {
+  addExercise,
+  addSet,
+  newDraft,
+  removeExercise,
+  removeSet,
+  setTemplateText,
+  updateExercise,
+  updateSet,
+} from '@/features/templates/draft'
 import { signedInDb } from '@/test/local-db'
 import type { StrydeDb } from '../db'
 import { createExercise } from './exercises'
@@ -16,6 +26,7 @@ import {
   listTemplateSummaries,
   removeTemplateExercise,
   reorderTemplateExercises,
+  saveTemplateTree,
   ungroupSuperset,
 } from './templates'
 
@@ -218,5 +229,106 @@ describe('normalizeSupersets', () => {
     expect(
       normalizeSupersets(items(input), moved === undefined ? undefined : String(moved)),
     ).toEqual(expected)
+  })
+})
+
+describe('saveTemplateTree', () => {
+  let db: StrydeDb
+  afterEach(async () => {
+    await db.delete()
+  })
+
+  const NOW = '2026-11-05T10:00:00.000Z'
+  it('creates a new template from a draft: template, exercises and sets, at the end of the list', async () => {
+    db = await signedInDb(USER)
+    await createTemplate({ name: 'Existing' }, db)
+    const ex = await createExercise(
+      { name: 'Bench', type: 'weighted', muscleGroup: 'chest', equipment: 'barbell' },
+      db,
+    )
+    let draft = setTemplateText(newDraft('0198a000-0000-7000-8000-000000000001', NOW), {
+      name: '  Push Day  ',
+      notes: '  Heavy ',
+    })
+    draft = addExercise(
+      draft,
+      ex,
+      {
+        rowId: '0198a000-0000-7000-8000-000000000002',
+        setId: '0198a000-0000-7000-8000-000000000003',
+      },
+      NOW,
+    )
+    draft = updateSet(draft, '0198a000-0000-7000-8000-000000000003', {
+      targetReps: 5,
+      plannedWeightKg: 60,
+    })
+
+    await saveTemplateTree(draft, { isNew: true }, db)
+
+    const saved = await getTemplateTree(draft.template.id, db)
+    expect(saved?.template).toMatchObject({ name: 'Push Day', notes: 'Heavy', userId: USER })
+    expect(saved?.template.sortOrder).toBeGreaterThan(0)
+    expect(saved?.exercises).toHaveLength(1)
+    expect(saved?.exercises[0]?.row).toMatchObject({
+      id: '0198a000-0000-7000-8000-000000000002',
+      exerciseId: ex.id,
+      position: 0,
+    })
+    expect(saved?.exercises[0]?.sets[0]).toMatchObject({
+      id: '0198a000-0000-7000-8000-000000000003',
+      targetReps: 5,
+      plannedWeightKg: 60,
+    })
+    // Every row went through the outbox like any other write.
+    expect(await db.outbox.count()).toBeGreaterThanOrEqual(4)
+  })
+
+  it('applies edits, additions and removals of an existing template, and writes nothing when unchanged', async () => {
+    db = await signedInDb(USER)
+    const { t, ids } = await pushDay(db)
+    const tree = await getTemplateTree(t.id, db)
+    if (!tree) throw new Error('missing tree')
+    await db.outbox.clear()
+
+    // Unchanged: no writes at all.
+    await saveTemplateTree(tree, { isNew: false }, db)
+    expect(await db.outbox.count()).toBe(0)
+
+    const first = tree.exercises[0]
+    const second = tree.exercises[1]
+    if (!first || !second) throw new Error('need exercises')
+    let draft = setTemplateText(tree, { name: 'Push Day v2' })
+    draft = updateExercise(draft, first.row.id, { restSeconds: 90 })
+    draft = removeSet(draft, first.sets[1]?.id ?? '')
+    draft = updateSet(draft, first.sets[0]?.id ?? '', { plannedWeightKg: 80 })
+    draft = removeExercise(draft, second.row.id)
+    draft = addSet(draft, first.row.id, '0198a000-0000-7000-8000-0000000000aa', NOW)
+
+    await saveTemplateTree(draft, { isNew: false }, db)
+
+    const saved = await getTemplateTree(t.id, db)
+    expect(saved?.template.name).toBe('Push Day v2')
+    expect(saved?.exercises.map((e) => e.row.id)).toEqual([first.row.id, ids[2]])
+    expect(saved?.exercises.map((e) => e.row.position)).toEqual([0, 1])
+    expect(saved?.exercises[0]?.row.restSeconds).toBe(90)
+    expect(saved?.exercises[0]?.sets.map((s) => s.id)).toEqual([
+      first.sets[0]?.id,
+      '0198a000-0000-7000-8000-0000000000aa',
+    ])
+    expect(saved?.exercises[0]?.sets[0]?.plannedWeightKg).toBe(80)
+    // The removed exercise's sets are soft-deleted with it.
+    const gone = await db.templateSets.where('templateExerciseId').equals(second.row.id).toArray()
+    expect(gone.length).toBeGreaterThan(0)
+    expect(gone.every((s) => s.deletedAt)).toBe(true)
+  })
+
+  it('refuses to save a template that was deleted in the meantime', async () => {
+    db = await signedInDb(USER)
+    const { t } = await pushDay(db)
+    const tree = await getTemplateTree(t.id, db)
+    if (!tree) throw new Error('missing tree')
+    await deleteTemplate(t.id, db)
+    await expect(saveTemplateTree(tree, { isNew: false }, db)).rejects.toThrow(/deleted/)
   })
 })

@@ -16,7 +16,7 @@ export function ActiveWorkoutMiniBar() {
   return (
     <Link
       to="/workout/active"
-      className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-surface-2"
+      className="vt-fixed-mini fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-surface-2"
     >
       <div className="mx-auto flex h-12 max-w-[640px] items-center gap-3 px-4">
         <span className="size-2 shrink-0 rounded-full bg-brand" aria-hidden />

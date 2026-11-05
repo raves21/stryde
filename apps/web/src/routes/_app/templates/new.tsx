@@ -1,11 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { createTemplate } from '@/db/repositories/templates'
+import { createFileRoute } from '@tanstack/react-router'
+import { TemplateEditor } from '@/features/templates/components/template-editor'
 
-// Creates an empty template and opens the editor (which autosaves), replacing this
-// entry in history so Back returns to where the user came from.
+// The editor in "new" mode: nothing is created until the first Save, so backing out
+// leaves no empty template behind. The name field is active on open.
 export const Route = createFileRoute('/_app/templates/new')({
-  beforeLoad: async () => {
-    const template = await createTemplate({ name: 'New template' })
-    throw redirect({ to: '/templates/$id', params: { id: template.id }, replace: true })
-  },
+  component: TemplateEditor,
 })

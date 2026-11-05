@@ -12,11 +12,25 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { listenForInstallPrompt } from './features/pwa/install'
 import { queryClient } from './lib/query-client'
+import { transitionType } from './lib/view-transition'
 import { routeTree } from './routeTree.gen'
 
 listenForInstallPrompt()
 
-const router = createRouter({ routeTree })
+const router = createRouter({
+  routeTree,
+  // Animated page changes (document.startViewTransition); the type picks the direction.
+  defaultViewTransition: {
+    types: ({ fromLocation, toLocation, pathChanged }) => {
+      if (!pathChanged || !fromLocation) return false
+      const type = transitionType(fromLocation.pathname, toLocation.pathname)
+      return type ? [type] : false
+    },
+  },
+})
+
+// iOS Safari ignores `user-scalable=no`; its pinch gesture can be cancelled here.
+document.addEventListener('gesturestart', (e) => e.preventDefault())
 
 declare module '@tanstack/react-router' {
   interface Register {

@@ -20,7 +20,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="vt-fixed-bottom fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
     >
       <div className="mx-auto grid h-16 max-w-[640px] grid-cols-5 items-center">
         <TabLink to="/" label="Today" icon={House} />

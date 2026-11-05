@@ -1,8 +1,6 @@
 import type { ExerciseRow } from '@stryde/shared'
-import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
-import { Button } from '@/components/ui/button'
 import { ExerciseBrowser } from './exercise-browser'
 import { ExerciseFormSheet } from './exercise-form-sheet'
 
@@ -38,11 +36,7 @@ export function ExercisePicker({
           onSelect={pick}
           showRecent
           stickyTop="top-0"
-          footer={
-            <Button variant="secondary" onClick={() => setCreating(true)}>
-              <Plus /> Create custom exercise
-            </Button>
-          }
+          onCreate={() => setCreating(true)}
         />
       </BottomSheet>
       <ExerciseFormSheet open={creating} onOpenChange={setCreating} onSaved={pick} />

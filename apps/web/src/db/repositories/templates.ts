@@ -27,6 +27,101 @@ export function updateTemplate(id: string, patch: RowPatch<'templates'>, db: Str
   return mutate([...TABLES], (w) => w.update('templates', id, patch), db)
 }
 
+/**
+ * Write an edited template in one transaction, from the editor's draft: the template row
+ * (inserted when `isNew`), then exercises and sets inserted, updated or soft-deleted to
+ * match the draft. Only rows that actually differ are touched, so saving an unchanged
+ * template writes nothing and unrelated devices' edits to other rows are left alone.
+ */
+export function saveTemplateTree(
+  tree: TemplateTree,
+  options: { isNew: boolean },
+  db: StrydeDb = defaultDb,
+) {
+  return mutate(
+    [...TABLES],
+    async (w) => {
+      const { template } = tree
+      const fields = { name: template.name.trim(), notes: template.notes?.trim() || null }
+      if (options.isNew) {
+        await w.insert('templates', {
+          id: template.id,
+          ...fields,
+          sortOrder: await nextSortOrder(w),
+        })
+      } else {
+        const stored = await w.get('templates', template.id)
+        if (!stored) throw new Error('This template was deleted')
+        if (stored.name !== fields.name || stored.notes !== fields.notes) {
+          await w.update('templates', template.id, fields)
+        }
+      }
+
+      const storedRows = options.isNew ? [] : await getTemplateExercises(template.id, w.db)
+      const keep = new Set(tree.exercises.map((e) => e.row.id))
+      await deleteTemplateExercises(
+        w,
+        storedRows.filter((r) => !keep.has(r.id)).map((r) => r.id),
+      )
+      const storedById = new Map(storedRows.map((r) => [r.id, r]))
+
+      for (const { row, sets } of tree.exercises) {
+        const exerciseFields = {
+          position: row.position,
+          supersetGroup: row.supersetGroup,
+          restSeconds: row.restSeconds,
+        }
+        const stored = storedById.get(row.id)
+        if (!stored) {
+          await w.insert('templateExercises', {
+            id: row.id,
+            templateId: template.id,
+            exerciseId: row.exerciseId,
+            ...exerciseFields,
+          })
+        } else if (
+          stored.position !== row.position ||
+          stored.supersetGroup !== row.supersetGroup ||
+          stored.restSeconds !== row.restSeconds
+        ) {
+          await w.update('templateExercises', row.id, exerciseFields)
+        }
+
+        const storedSets = stored ? await getTemplateSets(row.id, w.db) : []
+        const keepSets = new Set(sets.map((s) => s.id))
+        await w.softDelete(
+          'templateSets',
+          storedSets.filter((s) => !keepSets.has(s.id)).map((s) => s.id),
+        )
+        const storedSetById = new Map(storedSets.map((s) => [s.id, s]))
+        for (const set of sets) {
+          const setFields = {
+            position: set.position,
+            setType: set.setType,
+            targetKind: set.targetKind,
+            targetReps: set.targetReps,
+            targetRepsMax: set.targetRepsMax,
+            targetRir: set.targetRir,
+            plannedWeightKg: set.plannedWeightKg,
+            plannedDurationSec: set.plannedDurationSec,
+          }
+          const prev = storedSetById.get(set.id)
+          if (!prev) {
+            await w.insert('templateSets', { id: set.id, templateExerciseId: row.id, ...setFields })
+          } else if (
+            (Object.keys(setFields) as (keyof typeof setFields)[]).some(
+              (k) => prev[k] !== setFields[k],
+            )
+          ) {
+            await w.update('templateSets', set.id, setFields)
+          }
+        }
+      }
+    },
+    db,
+  )
+}
+
 /** Soft-deletes the template with its exercises and sets. */
 export function deleteTemplate(id: string, db: StrydeDb = defaultDb) {
   return mutate(

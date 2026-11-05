@@ -3,6 +3,8 @@ import { expect, type Page } from '@playwright/test'
 /** "Bench": set 1 fixed 5 reps @ 60 kg, set 2 to failure. */
 export async function createTemplate(page: Page, name: string) {
   await page.getByRole('link', { name: 'New template' }).click()
+  // A new template opens with its name field active; nothing exists until Save.
+  await expect(page.getByLabel('Template name')).toBeFocused()
   await page.getByLabel('Template name').fill(name)
   await page.getByRole('button', { name: 'Add exercise' }).click()
   const picker = page.getByRole('dialog')
@@ -15,7 +17,8 @@ export async function createTemplate(page: Page, name: string) {
   await page.getByRole('button', { name: 'Set 2 options' }).click()
   await page.getByRole('dialog').getByRole('radio', { name: 'Failure' }).click()
   await page.keyboard.press('Escape')
-  await expect(page.getByText('Saved')).toBeVisible()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Template saved')).toBeVisible()
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Today' }).click()
 }
 

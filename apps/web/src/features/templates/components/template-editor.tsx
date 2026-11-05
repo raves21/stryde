@@ -15,9 +15,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import type { ExerciseRow } from '@stryde/shared'
-import { useNavigate } from '@tanstack/react-router'
-import { Check, Copy, Ellipsis, Link2, Link2Off, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useBlocker, useNavigate } from '@tanstack/react-router'
+import { Copy, Ellipsis, Link2, Link2Off, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { Screen } from '@/components/app/screen'
 import { TopBar } from '@/components/app/top-bar'
@@ -32,25 +33,29 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import type { RowPatch } from '@/db/repositories/core'
+import { newId } from '@/db/ids'
 import {
-  addNextTemplateSet,
-  addTemplateExercise,
   deleteTemplate,
   duplicateTemplate,
-  groupSuperset,
-  removeTemplateExercise,
-  removeTemplateSet,
-  reorderTemplateExercises,
+  saveTemplateTree,
   type TemplateTree,
-  ungroupSuperset,
-  updateTemplate,
-  updateTemplateExercise,
-  updateTemplateSet,
 } from '@/db/repositories/templates'
 import { ExercisePicker } from '@/features/exercises/components/exercise-picker'
 import { useUnit } from '@/features/settings/use-settings'
-import { useSaveState } from '../use-save-state'
+import {
+  addExercise,
+  addSet,
+  draftSignature,
+  groupExercises,
+  newDraft,
+  removeExercise,
+  removeSet,
+  reorderExercises,
+  setTemplateText,
+  ungroupExercises,
+  updateExercise,
+  updateSet,
+} from '../draft'
 import { TemplateExerciseCard } from './template-exercise-card'
 
 /** "A1", "A2"… for exercises in a superset, by order within the group. */
@@ -66,48 +71,71 @@ function supersetLabels(tree: TemplateTree): Map<string, string> {
   return labels
 }
 
-/** Template editor with autosave (UI_DESIGN.md §5.8, PRODUCT_SPEC.md §4.2). */
-export function TemplateEditor({ tree }: { tree: TemplateTree }) {
-  const { template } = tree
+/**
+ * Template editor (UI_DESIGN.md §5.8, PRODUCT_SPEC.md §4.2). Edits go to an in-memory draft
+ * and are written once with the Save button; leaving with unsaved changes asks first.
+ * Without `tree` it creates a new template: nothing exists until the first Save.
+ */
+export function TemplateEditor({ tree }: { tree?: TemplateTree }) {
+  const isNew = !tree
   const navigate = useNavigate()
   const unit = useUnit()
-  const { state, save, saveLater, flush } = useSaveState()
-  const [name, setName] = useState(template.name)
-  const [notes, setNotes] = useState(template.notes ?? '')
+  const [blank] = useState(() => newDraft(newId(), new Date().toISOString()))
+  const baseline = tree ?? blank
+  const baselineSig = draftSignature(baseline)
+  const [draft, setDraft] = useState<TemplateTree>(baseline)
+  const [saving, setSaving] = useState(false)
   const [picking, setPicking] = useState(false)
   const [optionsFor, setOptionsFor] = useState<string | null>(null)
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const { template } = draft
+  const dirty = draftSignature(draft) !== baselineSig
 
-  // Pick up changes synced from another device while not editing these fields.
-  useEffect(
-    () => setName((n) => (document.activeElement?.id === 'template-name' ? n : template.name)),
-    [template.name],
-  )
-  useEffect(
-    () =>
-      setNotes((n) =>
-        document.activeElement?.id === 'template-notes' ? n : (template.notes ?? ''),
-      ),
-    [template.notes],
-  )
+  // A new template opens with its name field active.
+  useEffect(() => {
+    if (isNew) nameRef.current?.focus()
+  }, [isNew])
 
-  const labels = useMemo(() => supersetLabels(tree), [tree])
-  const ids = tree.exercises.map((e) => e.row.id)
-  const optionsSet = tree.exercises.flatMap((e) => e.sets).find((s) => s.id === optionsFor) ?? null
+  // The saved version changed (our own save, or a sync from another device): adopt it
+  // unless there are unsaved edits, which stay.
+  const lastBaseline = useRef(baselineSig)
+  useEffect(() => {
+    if (baselineSig === lastBaseline.current) return
+    const previous = lastBaseline.current
+    lastBaseline.current = baselineSig
+    setDraft((d) => (draftSignature(d) === previous ? baseline : d))
+  }, [baselineSig, baseline])
+
+  // Leaving (Back, a tab, the browser's back button, closing the tab) with unsaved edits.
+  const leaving = useRef(false)
+  const dirtyRef = useRef(dirty)
+  dirtyRef.current = dirty
+  const blocker = useBlocker({
+    shouldBlockFn: () => dirtyRef.current && !leaving.current,
+    enableBeforeUnload: () => dirtyRef.current && !leaving.current,
+    withResolver: true,
+  })
+
+  const labels = useMemo(() => supersetLabels(draft), [draft])
+  const ids = draft.exercises.map((e) => e.row.id)
+  const optionsSet = draft.exercises.flatMap((e) => e.sets).find((s) => s.id === optionsFor) ?? null
   const optionsTimed =
-    tree.exercises.find((e) => e.row.id === optionsSet?.templateExerciseId)?.exercise?.type ===
+    draft.exercises.find((e) => e.row.id === optionsSet?.templateExerciseId)?.exercise?.type ===
     'timed'
-  const selectedRows = tree.exercises.filter((e) => selected.has(e.row.id)).map((e) => e.row)
+  const selectedRows = draft.exercises.filter((e) => selected.has(e.row.id)).map((e) => e.row)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  const edit = (fn: (d: TemplateTree) => TemplateTree) => setDraft(fn)
+
   function reorder(order: string[], movedId: string) {
-    void save(() => reorderTemplateExercises(template.id, order, movedId))
+    edit((d) => reorderExercises(d, order, movedId))
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
@@ -117,15 +145,10 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
     reorder(arrayMove(ids, from, to), String(active.id))
   }
 
-  async function addExercise(exercise: ExerciseRow) {
-    await save(async () => {
-      const te = await addTemplateExercise({
-        templateId: template.id,
-        exerciseId: exercise.id,
-        position: tree.exercises.length,
-      })
-      await addNextTemplateSet(te.id)
-    })
+  function pickExercise(exercise: ExerciseRow) {
+    const rowIds = { rowId: newId(), setId: newId() }
+    const now = new Date().toISOString()
+    edit((d) => addExercise(d, exercise, rowIds, now))
   }
 
   function exitSelection() {
@@ -133,80 +156,90 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
     setSelected(new Set())
   }
 
+  async function onSave() {
+    if (!template.name.trim()) {
+      toast.error('Give the template a name first')
+      nameRef.current?.focus()
+      return
+    }
+    setSaving(true)
+    try {
+      await saveTemplateTree(draft, { isNew })
+      toast('Template saved', { duration: 1800 })
+      if (isNew) {
+        // Now it exists: continue on its own page without the "unsaved" guard.
+        leaving.current = true
+        await navigate({ to: '/templates/$id', params: { id: template.id }, replace: true })
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save the template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <Screen className="pb-28">
       <TopBar
-        title="Template"
+        title={isNew ? 'New template' : 'Template'}
         back
         actions={
           <>
-            <span
-              className="tnum flex items-center gap-1 text-sm text-muted-foreground"
-              aria-live="polite"
-            >
-              {state === 'pending' && 'Saving…'}
-              {state === 'saved' && (
-                <>
-                  <Check className="size-4" aria-hidden /> Saved
-                </>
-              )}
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Template options">
-                  <Ellipsis className="size-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={async () => {
-                    const copy = await duplicateTemplate(template.id)
-                    await navigate({ to: '/templates/$id', params: { id: copy.id } })
-                  }}
-                >
-                  <Copy /> Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
-                  <Trash2 /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button size="sm" onClick={onSave} disabled={saving || !dirty}>
+              Save
+            </Button>
+            {!isNew && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Template options">
+                    <Ellipsis className="size-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={dirty}
+                    onSelect={async () => {
+                      const copy = await duplicateTemplate(template.id)
+                      await navigate({ to: '/templates/$id', params: { id: copy.id } })
+                    }}
+                  >
+                    <Copy /> {dirty ? 'Duplicate (save first)' : 'Duplicate'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+                    <Trash2 /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </>
         }
       />
 
       <div className="-mt-2 flex flex-col gap-3">
         <Input
+          ref={nameRef}
           id="template-name"
           aria-label="Template name"
-          value={name}
+          value={template.name}
           maxLength={100}
           placeholder="Template name"
-          onChange={(e) => {
-            setName(e.target.value)
-            const value = e.target.value.trim()
-            if (value) saveLater('name', () => updateTemplate(template.id, { name: value }))
-          }}
+          onChange={(e) => edit((d) => setTemplateText(d, { name: e.target.value }))}
           className="h-14 border-none bg-transparent px-0 font-display text-[28px] font-semibold dark:bg-transparent"
         />
         <Textarea
           id="template-notes"
           aria-label="Notes"
-          value={notes}
+          value={template.notes ?? ''}
           maxLength={2000}
           placeholder="Notes (optional)"
           rows={2}
-          onChange={(e) => {
-            setNotes(e.target.value)
-            const value = e.target.value.trim()
-            saveLater('notes', () => updateTemplate(template.id, { notes: value || null }))
-          }}
+          onChange={(e) => edit((d) => setTemplateText(d, { notes: e.target.value }))}
           className="min-h-0 resize-none bg-surface-2"
         />
       </div>
 
-      {tree.exercises.length > 1 && (
+      {draft.exercises.length > 1 && (
         <div className="flex justify-end">
           <Button
             variant="ghost"
@@ -226,7 +259,7 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {tree.exercises.map((item, index) => (
+            {draft.exercises.map((item, index) => (
               <TemplateExerciseCard
                 key={item.row.id}
                 item={item}
@@ -243,25 +276,19 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
                   })
                 }
                 isFirst={index === 0}
-                isLast={index === tree.exercises.length - 1}
+                isLast={index === draft.exercises.length - 1}
                 onMove={(d) => reorder(arrayMove(ids, index, index + d), item.row.id)}
-                onRemove={() => void save(() => removeTemplateExercise(item.row.id))}
+                onRemove={() => edit((d) => removeExercise(d, item.row.id))}
                 onRestChange={(restSeconds) =>
-                  void save(() => updateTemplateExercise(item.row.id, { restSeconds }))
+                  edit((d) => updateExercise(d, item.row.id, { restSeconds }))
                 }
-                onAddSet={() =>
-                  void save(async () => {
-                    // Typed values may still be waiting on the debounce.
-                    await flush()
-                    await addNextTemplateSet(item.row.id)
-                  })
-                }
-                onSetChange={(setId, patch) => void save(() => updateTemplateSet(setId, patch))}
-                onSetChangeLater={(setId, patch: RowPatch<'templateSets'>) =>
-                  saveLater(`set:${setId}:${Object.keys(patch).join(',')}`, () =>
-                    updateTemplateSet(setId, patch),
-                  )
-                }
+                onAddSet={() => {
+                  const setId = newId()
+                  const now = new Date().toISOString()
+                  edit((d) => addSet(d, item.row.id, setId, now))
+                }}
+                onSetChange={(setId, patch) => edit((d) => updateSet(d, setId, patch))}
+                onSetChangeLater={(setId, patch) => edit((d) => updateSet(d, setId, patch))}
                 onOpenSetOptions={(set) => setOptionsFor(set.id)}
               />
             ))}
@@ -279,8 +306,8 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
             <Button
               className="flex-1"
               disabled={selectedRows.length < 2}
-              onClick={async () => {
-                await save(() => groupSuperset(template.id, [...selected]))
+              onClick={() => {
+                edit((d) => groupExercises(d, [...selected]))
                 exitSelection()
               }}
             >
@@ -290,8 +317,8 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
               variant="secondary"
               className="flex-1"
               disabled={!selectedRows.some((r) => r.supersetGroup)}
-              onClick={async () => {
-                await save(() => ungroupSuperset(template.id, [...selected]))
+              onClick={() => {
+                edit((d) => ungroupExercises(d, [...selected]))
                 exitSelection()
               }}
             >
@@ -301,16 +328,16 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
         </div>
       )}
 
-      <ExercisePicker open={picking} onOpenChange={setPicking} onPick={addExercise} />
+      <ExercisePicker open={picking} onOpenChange={setPicking} onPick={pickExercise} />
       <SetOptionsSheet
         set={optionsSet}
         timed={optionsTimed}
         onOpenChange={(open) => !open && setOptionsFor(null)}
-        onChange={(patch) => optionsSet && void save(() => updateTemplateSet(optionsSet.id, patch))}
+        onChange={(patch) => optionsSet && edit((d) => updateSet(d, optionsSet.id, patch))}
         onKindChange={(targetKind) =>
           optionsSet &&
-          void save(() =>
-            updateTemplateSet(optionsSet.id, {
+          edit((d) =>
+            updateSet(d, optionsSet.id, {
               targetKind,
               // RIR sets need a target RIR; the others have none.
               targetRir: targetKind === 'rir' ? (optionsSet.targetRir ?? 2) : null,
@@ -318,20 +345,30 @@ export function TemplateEditor({ tree }: { tree: TemplateTree }) {
           )
         }
         onDelete={() => {
-          if (optionsSet) void save(() => removeTemplateSet(optionsSet.id))
+          if (optionsSet) edit((d) => removeSet(d, optionsSet.id))
           setOptionsFor(null)
         }}
       />
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Delete ${template.name}?`}
+        title={`Delete ${template.name || 'this template'}?`}
         description="Workouts you already did from this template keep their history."
         confirmLabel="Delete template"
         onConfirm={async () => {
           await deleteTemplate(template.id)
+          leaving.current = true
           await navigate({ to: '/templates', replace: true })
         }}
+      />
+      <ConfirmDialog
+        open={blocker.status === 'blocked'}
+        onOpenChange={(open) => !open && blocker.status === 'blocked' && blocker.reset()}
+        title="Discard your changes?"
+        description="This template has changes you haven't saved."
+        confirmLabel="Discard changes"
+        cancelLabel="Keep editing"
+        onConfirm={() => blocker.status === 'blocked' && blocker.proceed()}
       />
     </Screen>
   )

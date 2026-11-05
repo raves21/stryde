@@ -1,9 +1,10 @@
 import { type ExerciseRow, MUSCLE_GROUPS, type MuscleGroup } from '@stryde/shared'
-import { ChevronRight, Search, SearchX } from 'lucide-react'
+import { ChevronRight, Plus, Search, SearchX } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/app/empty-state'
 import { SectionLabel } from '@/components/app/section-label'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EQUIPMENT_LABELS, MUSCLE_GROUP_LABELS } from '../labels'
@@ -16,11 +17,14 @@ import { useExercises, useRecentExerciseIds } from '../use-exercises'
 export function ExerciseBrowser({
   onSelect,
   showRecent = false,
+  onCreate,
   footer,
   stickyTop = 'top-14',
 }: {
   onSelect: (exercise: ExerciseRow) => void
   showRecent?: boolean
+  /** Shows "Create custom exercise" right under the filters, and when nothing matches. */
+  onCreate?: () => void
   footer?: ReactNode
   /** Offset of the sticky search bar (below the page's top bar). */
   stickyTop?: string
@@ -82,6 +86,8 @@ export function ExerciseBrowser({
         </ToggleGroup>
       </div>
 
+      {onCreate && <CreateCustomButton onClick={onCreate} />}
+
       {recent.length > 0 && (
         <section className="flex flex-col gap-2">
           <SectionLabel>Recent</SectionLabel>
@@ -90,7 +96,10 @@ export function ExerciseBrowser({
       )}
 
       {exercises && filtered.length === 0 ? (
-        <EmptyState icon={SearchX} title="No exercises match. Try another name or muscle group." />
+        <EmptyState
+          icon={SearchX}
+          title="No exercises match. Try another name or muscle group, or add your own."
+        />
       ) : (
         <section className="flex flex-col gap-2">
           {recent.length > 0 && <SectionLabel>All exercises</SectionLabel>}
@@ -99,6 +108,20 @@ export function ExerciseBrowser({
       )}
       {footer}
     </div>
+  )
+}
+
+/** Right below the filters so it is seen without scrolling (UI_DESIGN.md §5.9). */
+function CreateCustomButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="outline"
+      size="lg"
+      onClick={onClick}
+      className="justify-start gap-3 border-dashed border-brand/60 bg-brand-dim text-brand hover:bg-brand-dim hover:text-brand"
+    >
+      <Plus className="size-5" /> Create custom exercise
+    </Button>
   )
 }
 

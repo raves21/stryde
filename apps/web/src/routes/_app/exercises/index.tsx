@@ -32,7 +32,7 @@ function ExerciseLibrary() {
           </Button>
         }
       />
-      <ExerciseBrowser onSelect={(e) => open(e.id)} />
+      <ExerciseBrowser onSelect={(e) => open(e.id)} onCreate={() => setCreating(true)} />
       <ExerciseFormSheet open={creating} onOpenChange={setCreating} onSaved={(e) => open(e.id)} />
     </Screen>
   )
