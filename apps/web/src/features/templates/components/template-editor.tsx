@@ -225,7 +225,8 @@ export function TemplateEditor({ tree }: { tree?: TemplateTree }) {
           maxLength={100}
           placeholder="Template name"
           onChange={(e) => edit((d) => setTemplateText(d, { name: e.target.value }))}
-          className="h-14 border-none bg-transparent px-0 font-display text-[28px] font-semibold dark:bg-transparent"
+          // px-2.5 with -mx-2.5: room for the focus ring, text still lines up with the page.
+          className="-mx-2.5 h-14 w-[calc(100%+1.25rem)] border-none bg-transparent px-2.5 font-display text-[28px] font-semibold dark:bg-transparent"
         />
         <Textarea
           id="template-notes"
