@@ -41,7 +41,7 @@ export function UserSearch() {
           )}
           {data.users.map((u) => (
             <li key={u.username} className="flex min-h-16 items-center gap-3">
-              <UserAvatar displayName={u.displayName} avatarUrl={u.avatarUrl} />
+              <UserAvatar username={u.username} displayName={u.displayName} />
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-medium">{u.displayName}</span>
                 <span className="truncate text-sm text-muted-foreground">@{u.username}</span>

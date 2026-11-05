@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Screen } from '@/components/app/screen'
 import { SectionLabel } from '@/components/app/section-label'
 import { TopBar } from '@/components/app/top-bar'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/app/user-avatar'
 import {
   Select,
   SelectContent,
@@ -49,13 +49,7 @@ function ProfilePage() {
   const online = useOnline()
   const { standalone } = useInstallPrompt()
   if (!user) return null
-  const { displayName, username, avatarUrl, createdAt } = user.user
-  const initials = displayName
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  const { displayName, username, createdAt } = user.user
   const workouts = training?.sessions.length ?? 0
   const syncDetail = !online
     ? `Offline${pending ? ` · ${pending} pending` : ''}`
@@ -71,10 +65,7 @@ function ProfilePage() {
     <Screen>
       <TopBar title="Profile" />
       <section className="flex items-center gap-4">
-        <Avatar className="size-16">
-          {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
-          <AvatarFallback className="bg-surface-3 text-lg font-semibold">{initials}</AvatarFallback>
-        </Avatar>
+        <UserAvatar username={username} displayName={displayName} className="size-16" />
         <div className="flex min-w-0 flex-col">
           <p className="truncate text-xl font-semibold">{displayName}</p>
           {username && <p className="text-muted-foreground">@{username}</p>}

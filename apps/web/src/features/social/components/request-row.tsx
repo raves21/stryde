@@ -15,7 +15,7 @@ export function RequestRow({
   const { user } = request
   return (
     <li className="flex min-h-16 items-center gap-3">
-      <UserAvatar displayName={user.displayName} avatarUrl={user.avatarUrl} />
+      <UserAvatar username={user.username} displayName={user.displayName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium">{user.displayName}</span>
         <span className="truncate text-sm text-muted-foreground">@{user.username}</span>

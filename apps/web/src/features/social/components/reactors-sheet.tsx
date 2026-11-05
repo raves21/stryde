@@ -26,7 +26,7 @@ export function ReactorsSheet({
       <ul className="flex flex-col">
         {data?.map((r) => (
           <li key={r.userId} className="flex min-h-14 items-center gap-3">
-            <UserAvatar displayName={r.displayName} avatarUrl={r.avatarUrl} />
+            <UserAvatar username={r.username} displayName={r.displayName} />
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-medium">{r.displayName}</span>
               <span className="truncate text-sm text-muted-foreground">@{r.username}</span>

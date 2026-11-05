@@ -260,7 +260,7 @@ All primitives come from **shadcn/ui** (installed with the shadcn CLI into `src/
 | `Popover` | reaction picker, sync indicator details (desktop) |
 | `Badge` | set-type badges, PR chips, "custom" tag, pending count |
 | `Card` | stat tiles, feed cards, template cards |
-| `Avatar` | user avatars with initials fallback |
+| `Avatar` | (shadcn, no longer used for people: see `UserAvatar`) |
 | `Skeleton` | loading states |
 | `Sonner` (toast) | undo delete, "Update available", errors |
 | `Chart` (Recharts wrapper) | exercise progress charts |
@@ -278,7 +278,7 @@ Theming rules: override shadcn variables once in the global CSS (`--background: 
 - `StatTile`, `PRBadge` / `PRCard`, `SyncIndicator`
 - `YearGrid`, `MonthCalendar`, `WeekStrip`
 - `ExerciseChart` (Recharts wrapper using tokens)
-- `FeedCard`, `ReactionBar`, `ReactionPicker`, `Avatar` (image or initials on `--surface-3`)
+- `FeedCard`, `ReactionBar`, `ReactionPicker`, `UserAvatar` (a Blobatar generated from the username, static, on `--surface-3`; `@blobatar/react`, no network)
 - `EmptyState` (icon + one line + optional action), `BottomSheet`, `ConfirmDialog`
 
 ### Motion
