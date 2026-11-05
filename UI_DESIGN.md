@@ -191,6 +191,7 @@ Reverse-chronological list grouped by month (sticky month headers). Each item: d
 ### 5.8 Templates list & editor
 - List: cards with name, exercises preview ("Bench, Incline DB, Dips +3"), "Start" button on each card.
 - Editor: name field; exercise cards similar to active workout but inputs are **targets**: set type, target kind segmented control (`Reps` / `RIR` / `Failure`), target reps or range (e.g. `8–12`), target RIR, planned weight (optional), rest time per exercise. Drag handles to reorder; "Group as superset" via multi-select.
+- **Saving is explicit:** edits stay in a draft and are written once by the **Save** button in the top bar (disabled until something changed). Leaving with unsaved changes asks "Discard your changes?". A new template (`/templates/new`) doesn't exist until its first Save, and opens with the name field active.
 
 ### 5.9 Exercise library & detail
 - Library: search field (sticky), muscle group chips (horizontal scroll), list rows: name, equipment · muscle, small "custom" tag for user exercises. FAB/top "+" → create custom (name, type segmented: Weighted / Bodyweight / Timed, muscle, equipment, default rest).
@@ -280,6 +281,11 @@ Theming rules: override shadcn variables once in the global CSS (`--background: 
 - `FeedCard`, `ReactionBar`, `ReactionPicker`, `Avatar` (image or initials on `--surface-3`)
 - `EmptyState` (icon + one line + optional action), `BottomSheet`, `ConfirmDialog`
 
+### Motion
+- **Page changes** use view transitions (`defaultViewTransition` on the router): a slide + fade forward into a screen and back out of it, a plain cross-fade between tabs; the bottom bars stay still. Direction comes from `lib/view-transition.ts`. Browsers without the API just navigate.
+- **Dialogs** scale and fade in (about 240 ms in, 160 ms out), overlays fade. With reduced motion on, page changes are instant and dialogs keep only a short fade (no scale or slide); everything else stays still.
+- **Pinch zoom is disabled** (viewport meta, `touch-action: pan-x pan-y`, and a `gesturestart` guard for iOS Safari). Text size settings still scale the UI.
+
 ## 7. States every screen must handle
 - **Loading:** skeletons shaped like the content (`--surface-2` blocks, subtle shimmer). Local-data screens should almost never show loading.
 - **Empty:** one short, encouraging line + action. No illustrations.
@@ -300,4 +306,5 @@ Contrast ≥ 4.5:1 for text; touch targets ≥ 48px; every icon-only button has 
 - No stock photos, mascots, or illustrations.
 - Don't use the accent for more than primary action + completed + trained + active tab.
 - Don't hide the Finish button or rest-timer controls behind menus.
+- Don't hide "Create custom exercise" at the bottom of a long list: it sits right under the search and filters in the library and the picker.
 - Don't use tiny native number spinners; use the large `NumberInput`.

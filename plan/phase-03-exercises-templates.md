@@ -29,7 +29,7 @@ The app shell with bottom navigation exists; users can browse/create exercises a
   - Exercise cards with ordered planned sets. Per set: set type (warmup/working), target kind (shadcn `ToggleGroup`: Reps / RIR / Failure), target reps or range (`8–12`), target RIR, planned weight (optional), and per-exercise rest time.
   - Add/remove sets and exercises; reorder exercises with drag handles (use `@dnd-kit/sortable`), with up/down buttons as an accessible fallback.
   - Superset: multi-select exercises → "Group as superset" assigns the next free letter to `supersetGroup`; "Ungroup".
-  - Autosave through repositories (debounced), no explicit Save button needed; show "Saved" state.
+  - ~~Autosave through repositories (debounced)~~ Superseded 2026-11-05: edits stay in a draft written once by a **Save** button (`saveTemplateTree`); leaving with unsaved changes asks first; a new template isn't created until its first Save.
 - Pure function in `packages/shared` (or `apps/web/src/features/templates/`): `templateToSession(template, now, timezone)` → session + session_exercises + sets rows (used in Phase 4).
 
 ## Tests

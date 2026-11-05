@@ -28,7 +28,8 @@ bun run e2e                                                           # Playwrig
 
 - **Port 3000 is taken** on this machine by the owner's ticketing Nuxt dev server (`~/code_projects/frontend/vue/ticketing-client`). Don't stop it; run the Stryde API on 3001 as above. The ticketing project's Postgres has also held port 5432 before; if the Stryde DB container isn't running, ask before touching the other project.
 - Local dev accounts from browser checks all use the password `correct-horse-battery`: `p5_mvrnykhd` (6 workouts over 10 weeks, good for charts), `p4_mvrk2ixr` (template + 2 workouts), `p3_mvrj78az` (template with a superset).
-- Last full run: 347 unit/integration tests + 5 e2e green, lint and typecheck clean.
+- If port 5432 is held by another project's Postgres (it was: `laradock-postgres-1`), don't stop it: run a throwaway one on 5433 (`docker run -d --name stryde-dev-db-alt -p 5433:5432 -e POSTGRES_USER=stryde -e POSTGRES_PASSWORD=stryde -e POSTGRES_DB=stryde postgres:17-alpine`) and use `DATABASE_URL=postgres://stryde:stryde@localhost:5433/stryde` for tests and e2e.
+- Last full run: 373 unit/integration tests + 8 e2e green, lint and typecheck clean.
 
 ## Gotchas learned the hard way
 
