@@ -200,7 +200,7 @@ Reverse-chronological list grouped by month (sticky month headers). Each item: d
   - **Headline metric**: current e1RM (big Barlow number) + delta vs 3 months ago (green ▲ / muted ▼).
   - **Chart card:** metric switcher (segmented: `e1RM` · `Best set` · `Volume` for weighted; `Max reps` · `Total reps` for bodyweight; `Duration` for timed) + range chips `1M 3M 6M 1Y All`. Line chart: volt line, 2px, dots on data points, PR points rendered as **gold dots**. Minimal gridlines (`--border`), muted axis labels, tooltip card showing date + best set.
   - **Personal records** list: rows with PR type, value, date (gold trophy icon).
-  - **History**: per-session set lists.
+  - **History**: one card per session: date + summary line (sets · volume or total time) with a gold PR badge, then a table (set badge `W`/1/2…, weight, reps or time, RIR or `F`) with a trophy on each set that earned a PR; the card opens the session.
 
 ### 5.10 Progress tab
 - Stat tiles (2×2): This week · This month · This year · Total workouts.

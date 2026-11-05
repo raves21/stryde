@@ -28,13 +28,13 @@ import {
 } from '@/features/exercises/labels'
 import { useExercise } from '@/features/exercises/use-exercises'
 import { ExerciseChart } from '@/features/progress/components/exercise-chart'
+import { ExerciseHistoryCard } from '@/features/progress/components/exercise-history-card'
 import { formatMetric, HEADLINE, METRIC_LABELS } from '@/features/progress/metrics'
 import { useTraining } from '@/features/progress/use-training'
 import { useUnit } from '@/features/settings/use-settings'
 import { formatPR } from '@/features/workout/format-pr'
 import { dayKey, type ExerciseHistory } from '@/lib/training'
 import { cn } from '@/lib/utils'
-import { formatSetLine } from '@/lib/workout'
 
 export const Route = createFileRoute('/_app/exercises/$id')({
   component: ExerciseDetailPage,
@@ -76,6 +76,7 @@ function ExerciseDetail({
   const [archiving, setArchiving] = useState(false)
   const today = new Date()
   const sessions = history?.sessions ?? []
+  const prSetIds = new Set(history?.events.flatMap((e) => (e.setId ? [e.setId] : [])))
 
   const months = RANGES[range]
   const from =
@@ -232,27 +233,15 @@ function ExerciseDetail({
                 key={s.sessionId}
                 to="/workout/$sessionId"
                 params={{ sessionId: s.sessionId }}
-                className="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-4 hover:bg-surface-2"
+                className="rounded-2xl border border-border bg-surface p-4 transition-colors hover:bg-surface-2"
               >
-                <span className="text-sm font-medium text-muted-foreground">
-                  {format(new Date(`${s.date}T00:00:00`), 'EEE d MMM yyyy')}
-                </span>
-                <ol className="tnum flex flex-col text-sm">
-                  {s.sets
-                    .filter((set) => set.completedAt !== null)
-                    .map((set) => (
-                      <li
-                        key={set.id}
-                        className={set.setType === 'warmup' ? 'text-muted-foreground' : undefined}
-                      >
-                        {set.setType === 'warmup' ? 'W ' : ''}
-                        {formatSetLine(set, exercise.type, unit)}
-                        {set.targetKind === 'failure' && (
-                          <span className="ml-1 font-display font-bold text-failure">F</span>
-                        )}
-                      </li>
-                    ))}
-                </ol>
+                <ExerciseHistoryCard
+                  session={s}
+                  type={exercise.type}
+                  unit={unit}
+                  prCount={history?.events.filter((e) => e.sessionId === s.sessionId).length ?? 0}
+                  prSetIds={prSetIds}
+                />
               </Link>
             ))}
           </section>

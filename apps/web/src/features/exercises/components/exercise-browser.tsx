@@ -63,7 +63,7 @@ export function ExerciseBrowser({
             aria-label="Search exercises"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 mt-4"
           />
         </div>
         <ToggleGroup

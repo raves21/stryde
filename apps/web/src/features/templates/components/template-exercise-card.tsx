@@ -137,7 +137,7 @@ export function TemplateExerciseCard({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={onRemove}>
-              <Trash2 /> Remove exercise
+              <Trash2 /> Remove
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

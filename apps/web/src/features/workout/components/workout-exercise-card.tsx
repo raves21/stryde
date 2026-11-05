@@ -120,7 +120,7 @@ export function WorkoutExerciseCard({
                 hasCompleted ? setConfirmRemove(true) : actions.removeExercise(item)
               }
             >
-              <Trash2 /> Remove exercise
+              <Trash2 /> Remove
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
