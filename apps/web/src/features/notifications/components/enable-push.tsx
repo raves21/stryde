@@ -77,7 +77,7 @@ export function EnablePush({ onEnabled }: { onEnabled?: () => void }) {
     )
   }
   return (
-    <Button size="lg" onClick={turnOn} disabled={busy || !online}>
+    <Button size="lg" className="w-full" onClick={turnOn} disabled={busy || !online}>
       <BellRing /> Enable notifications
     </Button>
   )

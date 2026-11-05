@@ -31,7 +31,7 @@ export function TopBar({
           <ChevronLeft className="size-6" />
         </Button>
       )}
-      <h1 className="min-w-0 flex-1 truncate font-display text-[28px] font-semibold leading-none">
+      <h1 className="min-w-0 flex-1 truncate font-display text-[28px] font-semibold leading-[1.25]">
         {title}
       </h1>
       {actions}
