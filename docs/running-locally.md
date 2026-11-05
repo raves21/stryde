@@ -37,6 +37,21 @@ Stop it with `Ctrl+C`. The database keeps running in Docker (`docker compose -f 
 - Offline behavior inside an open tab still works (DevTools → Network → Offline), but a page you haven't opened yet won't load. To test real offline and the PWA, use the [production build](#testing-the-production-build-offline-install-service-worker).
 - The first load after adding a new dependency can reload once. That is Vite, not the app.
 
+## Demo data for the Feed
+
+An empty feed isn't much to look at, so there is a seed script for your **local** database (it refuses to run against anything that isn't `localhost`):
+
+```sh
+bun run seed:dev
+```
+
+It creates a `demo` account and five friends (Marco, Aiko, Sam, Lena, Diego) with 14 finished workouts over the last two weeks, some with personal records, plus reactions between them and a pending friend request (Priya). It goes through the real API routes, so the feed, PR badges, friend notifications and the bell all fill in as they would for real.
+
+- Sign in as **`demo`** with password **`correct-horse-battery`** (the friends use the same password).
+- **To see it from your own account instead**, sign up in the app first, then: `cd apps/api && bun src/scripts/seed-dev.ts --user <your-username>`. That makes you friends with all five and gives you Priya's pending request. (It doesn't add workouts to your own history.)
+- Running it again updates the same rows instead of adding more; the times move forward so "26 minutes ago" stays recent.
+- To remove it all: `docker compose -f docker/compose.dev.yml down -v` (wipes the whole dev database), then up again.
+
 ## Everyday commands
 
 ```sh

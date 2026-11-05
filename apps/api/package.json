@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun src/db/migrate-cli.ts",
-    "gen:vapid": "bun src/scripts/gen-vapid.ts"
+    "gen:vapid": "bun src/scripts/gen-vapid.ts",
+    "seed:dev": "bun src/scripts/seed-dev.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.12",
