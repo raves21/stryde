@@ -225,7 +225,7 @@ export function TemplateEditor({ tree }: { tree?: TemplateTree }) {
           maxLength={100}
           placeholder="Template name"
           onChange={(e) => edit((d) => setTemplateText(d, { name: e.target.value }))}
-          className="h-14 border-none bg-transparent px-3 font-display text-[28px] font-semibold dark:bg-transparent"
+          className="h-14 mt-4 border-none bg-transparent px-3 font-display text-[28px] font-semibold dark:bg-transparent"
         />
         <Textarea
           id="template-notes"

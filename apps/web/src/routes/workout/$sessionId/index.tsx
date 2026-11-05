@@ -87,9 +87,11 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
         }
       />
       <div className="-mt-4 flex items-center justify-between gap-2">
-        <p className="tnum text-muted-foreground">
-          {format(session.startedAt, 'EEE d MMM yyyy')} · {format(session.startedAt, 'p')}–
-          {format(finishedAt, 'p')}
+        <p className="tnum flex flex-col text-muted-foreground">
+          <span>{format(session.startedAt, 'EEE d MMM yyyy')}</span>
+          <span>
+            {format(session.startedAt, 'p')}–{format(finishedAt, 'p')}
+          </span>
         </p>
         <Button
           variant="ghost"
