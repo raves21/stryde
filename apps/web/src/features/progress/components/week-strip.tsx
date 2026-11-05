@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { dayKey, weekDays } from '@/lib/training'
 import { cn } from '@/lib/utils'
 
-/** Mon–Sun circles; trained days filled volt with a check, today outlined (UI_DESIGN.md §5.3). */
+/** Sun–Sat circles; trained days filled volt with a check, today outlined (UI_DESIGN.md §5.3). */
 export function WeekStrip({ trained, today = new Date() }: { trained: Set<string>; today?: Date }) {
   const days = weekDays(today)
   const todayKey = dayKey(today)

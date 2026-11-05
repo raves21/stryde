@@ -10,6 +10,7 @@ import {
 } from '@stryde/shared'
 import { addDays, format, startOfMonth, startOfWeek, startOfYear } from 'date-fns'
 import type { TrainingRows } from '@/db/repositories/sessions'
+import { WEEK_STARTS_ON } from './dates'
 
 // History, calendar, stats and PR marks, derived from local rows with the shared calc
 // module (PRODUCT_SPEC.md §4.4–4.5, §6). Pure, so it's tested without Dexie.
@@ -159,9 +160,9 @@ export type Stats = {
   totalSets: number
 }
 
-/** Progress tab tiles (weeks start Monday; days are session `localDate`s). */
+/** Progress tab tiles (weeks start on Sunday, see `WEEK_STARTS_ON`; days are session `localDate`s). */
 export function computeStats(training: Training, today: Date): Stats {
-  const week = dayKey(startOfWeek(today, { weekStartsOn: 1 }))
+  const week = dayKey(startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }))
   const month = dayKey(startOfMonth(today))
   const year = dayKey(startOfYear(today))
   const end = dayKey(today)
@@ -178,8 +179,8 @@ export function computeStats(training: Training, today: Date): Stats {
   }
 }
 
-/** The 7 days (Mon–Sun) of `today`'s week as `YYYY-MM-DD`. */
+/** The 7 days (Sun–Sat) of `today`'s week as `YYYY-MM-DD`. */
 export function weekDays(today: Date): string[] {
-  const monday = startOfWeek(today, { weekStartsOn: 1 })
-  return Array.from({ length: 7 }, (_, i) => dayKey(addDays(monday, i)))
+  const first = startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON })
+  return Array.from({ length: 7 }, (_, i) => dayKey(addDays(first, i)))
 }

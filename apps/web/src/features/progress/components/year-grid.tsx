@@ -1,12 +1,13 @@
 import { addDays, format, startOfWeek, subWeeks } from 'date-fns'
 import { useEffect, useRef } from 'react'
+import { WEEK_STARTS_ON, weekdayInitials } from '@/lib/dates'
 import { dayKey } from '@/lib/training'
 import { cn } from '@/lib/utils'
 
 const WEEKS = 53
 
 /**
- * GitHub-style year: 53 columns × 7 rows (Mon–Sun), binary trained / not trained, month
+ * GitHub-style year: 53 columns × 7 rows (Sun–Sat), binary trained / not trained, month
  * labels, scrolled to the current week (UI_DESIGN.md §5.10).
  */
 export function YearGrid({
@@ -19,7 +20,7 @@ export function YearGrid({
   today?: Date
 }) {
   const scroller = useRef<HTMLDivElement>(null)
-  const first = startOfWeek(subWeeks(today, WEEKS - 1), { weekStartsOn: 1 })
+  const first = startOfWeek(subWeeks(today, WEEKS - 1), { weekStartsOn: WEEK_STARTS_ON })
   const todayKey = dayKey(today)
   const weeks = Array.from({ length: WEEKS }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => addDays(first, w * 7 + d)),
@@ -37,10 +38,10 @@ export function YearGrid({
         aria-hidden
       >
         <span />
-        {['M', '', 'W', '', 'F', '', ''].map((l, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed weekday rows
-          <span key={i} className="leading-[11px]">
-            {l}
+        {weekdayInitials().map(({ letter, day }) => (
+          // Only Mon, Wed and Fri are labelled, like GitHub's grid.
+          <span key={day} className="leading-[11px]">
+            {day === 1 || day === 3 || day === 5 ? letter : ''}
           </span>
         ))}
       </div>

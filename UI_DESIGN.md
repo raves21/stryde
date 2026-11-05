@@ -130,7 +130,7 @@ For each: purpose → layout → key components → states. Use realistic sample
 ### 5.3 Today (home)
 Top to bottom:
 - Greeting line (muted) + date.
-- **Week strip:** 7 day circles Mon–Sun; trained days filled volt with a check, today outlined. Caption: "3 workouts this week".
+- **Week strip:** 7 day circles Sun–Sat; trained days filled volt with a check, today outlined. Caption: "3 workouts this week".
 - **Start card:** big primary "Start empty workout" + horizontal scroll of **template chips/cards** (name, exercise count, "last done 4d ago"). Tap template → start sheet with preview + "Start".
 - If active workout exists → this card becomes **"Resume Push Day · 32:14"**.
 - **Recent workouts** (last 3): compact cards (name, date, duration, sets, PR badge) → session detail. "See all" → History.

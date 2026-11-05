@@ -131,7 +131,10 @@ describe('buildTraining', () => {
 describe('computeStats', () => {
   it.each([
     ['Wednesday 28 Oct', new Date(2026, 9, 28), { week: 1, month: 3, year: 3, total: 3 }],
-    ['Sunday 1 Nov', new Date(2026, 10, 1), { week: 1, month: 0, year: 3, total: 3 }],
+    // The week runs Sunday to Saturday: Sat 31 Oct is still the week of Sun 25 Oct...
+    ['Saturday 31 Oct', new Date(2026, 9, 31), { week: 1, month: 3, year: 3, total: 3 }],
+    // ...and Sun 1 Nov starts a new one.
+    ['Sunday 1 Nov', new Date(2026, 10, 1), { week: 0, month: 0, year: 3, total: 3 }],
     ['Monday 2 Nov', new Date(2026, 10, 2), { week: 0, month: 0, year: 3, total: 3 }],
   ])('%s', (_, today, expected) => {
     const t = build(
@@ -145,15 +148,17 @@ describe('computeStats', () => {
     expect(s.totalSets).toBe(3)
   })
 
-  it('weekDays runs Monday to Sunday', () => {
+  it('weekDays runs Sunday to Saturday', () => {
     expect(weekDays(new Date(2026, 9, 28))).toEqual([
+      '2026-10-25',
       '2026-10-26',
       '2026-10-27',
       '2026-10-28',
       '2026-10-29',
       '2026-10-30',
       '2026-10-31',
-      '2026-11-01',
     ])
+    // A Sunday starts its own week.
+    expect(weekDays(new Date(2026, 10, 1))[0]).toBe('2026-11-01')
   })
 })

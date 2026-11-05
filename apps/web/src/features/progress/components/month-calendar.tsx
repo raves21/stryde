@@ -2,6 +2,7 @@ import { addDays, addMonths, endOfMonth, format, startOfMonth, startOfWeek } fro
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { WEEK_STARTS_ON, weekdayInitials } from '@/lib/dates'
 import { dayKey } from '@/lib/training'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +17,7 @@ export function MonthCalendar({
   today?: Date
 }) {
   const [month, setMonth] = useState(() => startOfMonth(today))
-  const start = startOfWeek(month, { weekStartsOn: 1 })
+  const start = startOfWeek(month, { weekStartsOn: WEEK_STARTS_ON })
   const end = endOfMonth(month)
   const days: Date[] = []
   for (let d = start; d <= end || days.length % 7 !== 0; d = addDays(d, 1)) days.push(d)
@@ -45,10 +46,9 @@ export function MonthCalendar({
         </Button>
       </div>
       <div className="grid grid-cols-7 gap-y-1 text-center">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed weekday header
-          <span key={i} className="text-xs text-muted-foreground">
-            {l}
+        {weekdayInitials().map(({ letter, day }) => (
+          <span key={day} className="text-xs text-muted-foreground">
+            {letter}
           </span>
         ))}
         {days.map((d) => {
