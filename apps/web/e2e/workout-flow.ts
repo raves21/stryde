@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test'
 
 /** "Bench": set 1 fixed 5 reps @ 60 kg, set 2 to failure. */
 export async function createTemplate(page: Page, name: string) {
-  await page.getByRole('link', { name: 'New template' }).click()
+  await page.getByRole('link', { name: 'New template' }).first().click()
   // A new template opens with its name field active; nothing exists until Save.
   await expect(page.getByLabel('Template name')).toBeFocused()
   await page.getByLabel('Template name').fill(name)

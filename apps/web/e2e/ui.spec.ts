@@ -9,7 +9,7 @@ test('templates are saved with a button, and leaving unsaved changes asks first'
 }) => {
   await signUp(page)
   await page.goto('/templates')
-  await page.getByRole('link', { name: 'New template' }).click()
+  await page.getByRole('link', { name: 'New template' }).first().click()
 
   // The name field is active; Save stays off until there is something to save.
   const name = page.getByLabel('Template name')
@@ -76,7 +76,7 @@ test('pinch zoom is locked and dialogs animate visibly', async ({ page }) => {
 
   // An alert dialog opens with the long, clearly visible enter animation.
   await page.goto('/templates')
-  await page.getByRole('link', { name: 'New template' }).click()
+  await page.getByRole('link', { name: 'New template' }).first().click()
   await expect(page.getByLabel('Template name')).toBeFocused()
   await page.keyboard.type('Temp')
   await page.getByRole('button', { name: 'Back' }).click()
