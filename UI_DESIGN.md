@@ -136,6 +136,8 @@ Top to bottom:
 - **Recent workouts** (last 3): compact cards (name, date, duration, sets, PR badge) → session detail. "See all" → History.
 - Empty state (new user): friendly line "No workouts yet. Your first one sets the baseline." + start button.
 
+**Sports.** Today's start card and the center Start sheet have a secondary **Start a sport** button: a picker with the sports (search and "Create custom sport", no muscle chips). A sport in progress uses its own screen instead of the workout screen: big timer (`88px` display type, "Started 10:56 AM"), a notes box, a large **Finish** and a quiet **Discard**; no sets, rest timer or exercise cards. Finish opens a sheet: "Minutes played" (a large number field starting from the timer, with the formatted result below it), notes, "Share with friends", Save. Sessions of a sport show as time + "Sport" in history rows and feed cards (no exercise or set counts) and as a duration + sport-name tile pair on the session detail (no set table). Progress adds an **Active minutes** pair of tiles (this week / this month) once a sport exists; the week strip caption reads "N active days this week".
+
 ### 5.4 Active workout (**the most important screen; design this with the most care**)
 Full screen, tab bar hidden, mini-bar not shown.
 
@@ -198,7 +200,7 @@ Reverse-chronological list grouped by month (sticky month headers). Each item: d
 - **Detail:**
   - Header: name, muscle · equipment.
   - **Headline metric**: current e1RM (big Barlow number) + delta vs 3 months ago (green ▲ / muted ▼).
-  - **Chart card:** metric switcher (segmented: `e1RM` · `Best set` · `Volume` for weighted; `Max reps` · `Total reps` for bodyweight; `Duration` for timed) + range chips `1M 3M 6M 1Y All`. Line chart: volt line, 2px, dots on data points, PR points rendered as **gold dots**. Minimal gridlines (`--border`), muted axis labels, tooltip card showing date + best set.
+  - **Chart card:** metric switcher (segmented: `e1RM` · `Best set` · `Volume` for weighted; `Max reps` · `Total reps` for bodyweight; `Duration` for timed; `Time` for a sport) + range chips `1M 3M 6M 1Y All`. Line chart: volt line, 2px, dots on data points, PR points rendered as **gold dots**. Minimal gridlines (`--border`), muted axis labels, tooltip card showing date + best set.
   - **Personal records** list: rows with PR type, value, date (gold trophy icon).
   - **History**: one card per session: date + summary line (sets · volume or total time) with a gold PR badge, then a table (set badge `W`/1/2…, weight, reps or time, RIR or `F`) with a trophy on each set that earned a PR; the card opens the session.
 

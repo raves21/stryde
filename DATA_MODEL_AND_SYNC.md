@@ -33,13 +33,15 @@ Common columns on every synced table:
 | Column | Type | Notes |
 |---|---|---|
 | `name` | text | |
-| `type` | enum `weighted \| bodyweight \| timed` | |
+| `type` | enum `weighted \| bodyweight \| timed \| sport` | `sport`: time only (see below) |
 | `muscleGroup` | enum (chest, back, shoulders, biceps, triceps, forearms, quads, hamstrings, glutes, calves, core, full_body, cardio, other) | |
 | `equipment` | enum (barbell, dumbbell, machine, cable, bodyweight, kettlebell, band, smith, other) | |
 | `defaultRestSeconds` | int null | |
 | `isPreset` | bool | preset rows have `userId = null`, are seeded server-side, read-only |
 
 Presets are delivered via pull like any row (with `userId null`), cached locally, never pushed.
+
+**Sports** (`type = sport`) reuse the session tables, no new columns: a sport session is a `sessions` row (name = the sport, `notes`, `shareWithFriends`) with exactly one `session_exercises` row of a sport exercise and exactly one `sets` row whose `durationSec` is the time played (completion rule: a completed sport set needs `durationSec`, see `setCompletionError`). `finishedAt - startedAt` equals that duration (the client keeps them in step when finishing and when editing times). Muscle group `cardio` and equipment `other` are stored for sports but not shown. PRs are never computed for the sport type. Migration `0003_sport_exercise_type` adds the enum value; the six presets have fixed ids in the seed.
 
 ### `templates`
 `name` text, `notes` text null, `sortOrder` int.

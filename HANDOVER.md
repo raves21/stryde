@@ -2,17 +2,16 @@
 
 Context for the next session working on Stryde. Read this first, then `PROGRESS.md` (the source of truth for status and decisions); the reading order in `AGENTS.md` / `CLAUDE.md` still applies.
 
-## Where things stand (2026-11-04)
+## Where things stand (2026-11-09)
 
-- **Phases 0–9 are implemented.** v1 (auth, local-first sync, exercises/templates, active workout with inline PR chip, history/calendar/charts/PRs, PWA, Docker + CI/CD) and v2: Phase 8 social (friends, feed, reactions) and Phase 9 notifications (Web Push, in-app list + bell, SSE live updates, rest-timer push).
-- **Phases 0–8 are live** at https://stryde.obnsolutions.org on the owner's home server (cloudflared host service `cloudflared-obn` → `127.0.0.1:8173`). Every push to `main` runs CI, then Deploy (build → GHCR → ZeroTier + SSH → compose up → health check on the server). Deploys are green.
-- **Phase 9 is built and tested locally; not pushed or deployed.** It needs the owner to add `VAPID_*` keys to the server `.env` (`bun run gen:vapid`, `docs/deploy-home-server.md` §9) and test on real phones (Android Chrome, iPhone Home Screen app). Push delivery itself can't be exercised in tests, only with a mocked sender and a Bun-side encryption check.
-- Still open for the owner: Cloudflare cache rules for `stryde.obnsolutions.org` (`sw.js` is cached 4 h until set), real Google sign-in, database backup cron (`docker/backup.sh`), rollback test, phone installs. See `BLOCKERS.md`.
-- **Next:** push Phase 9 when the owner says so, help them enable and verify push on their phones, then Phase 10 (VPS guide, docs only) if wanted.
+- **Phases 0–9 are implemented and live** at https://stryde.obnsolutions.org on the owner's home server (cloudflared host service `cloudflared-obn` → `127.0.0.1:8173`). Every push to `main` runs CI, then Deploy (build → GHCR → ZeroTier + SSH → compose up → health check on the server). Updates reach phones by themselves (`AutoUpdate`, applied shortly after leaving the app when nothing is in progress).
+- **Sports are built and tested locally, not pushed or deployed** (new exercise type `sport`, migration `0003`): live timer, finish sheet, Active minutes on Progress, feed cards, six presets. See `PROGRESS.md` (2026-11-09 decision) and `PRODUCT_SPEC.md` §4.1b.
+- Push notifications need the owner's VAPID keys on the server and a real phone to verify (`docs/deploy-home-server.md` §9). Still open for the owner: Cloudflare cache rules for `stryde.obnsolutions.org`, real Google sign-in, the database backup cron (`docker/backup.sh`), the rollback test, phone installs. See `BLOCKERS.md`.
+- **Next:** push the sports work when the owner says so; Phase 10 (VPS guide, docs only) if wanted.
 
 ## Open decisions (ask the owner)
 
-1. **Push Phase 9** now or after they have generated the VAPID keys.
+1. **Push the sports work** (it ships a database migration, applied when the app starts).
 2. **Phase 10** (VPS deployment guide): wanted?
 3. Real Google sign-in is the last Phase 1 item; needs the owner's OAuth credentials.
 
@@ -29,7 +28,7 @@ bun run e2e                                                           # Playwrig
 - **Port 3000 is taken** on this machine by the owner's ticketing Nuxt dev server (`~/code_projects/frontend/vue/ticketing-client`). Don't stop it; run the Stryde API on 3001 as above. The ticketing project's Postgres has also held port 5432 before; if the Stryde DB container isn't running, ask before touching the other project.
 - Local dev accounts from browser checks all use the password `correct-horse-battery`: `p5_mvrnykhd` (6 workouts over 10 weeks, good for charts), `p4_mvrk2ixr` (template + 2 workouts), `p3_mvrj78az` (template with a superset).
 - If port 5432 is held by another project's Postgres (it was: `laradock-postgres-1`), don't stop it: run a throwaway one on 5433 (`docker run -d --name stryde-dev-db-alt -p 5433:5432 -e POSTGRES_USER=stryde -e POSTGRES_PASSWORD=stryde -e POSTGRES_DB=stryde postgres:17-alpine`) and use `DATABASE_URL=postgres://stryde:stryde@localhost:5433/stryde` for tests and e2e.
-- Last full run: 373 unit/integration tests + 8 e2e green, lint and typecheck clean.
+- Last full run: 438 unit/integration tests + 10 e2e green, lint and typecheck clean.
 
 ## Gotchas learned the hard way
 

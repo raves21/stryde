@@ -25,7 +25,7 @@ The owner trains **to failure or close to failure**. Most sets are not "3×10"; 
 
 | Term | Meaning |
 |---|---|
-| **Exercise** | A movement, e.g. "Bench Press". Either a **preset** (shared, read-only) or **custom** (owned by a user). Has a type: `weighted`, `bodyweight`, `timed`. |
+| **Exercise** | A movement, e.g. "Bench Press". Either a **preset** (shared, read-only) or **custom** (owned by a user). Has a type: `weighted`, `bodyweight`, `timed`, or `sport`. |
 | **Template** | A reusable workout plan, e.g. "Push Day": ordered exercises + planned sets. |
 | **Session** (a.k.a. Workout) | One actual performed workout with start and finish time. May come from a template or be freeform. |
 | **Set** | One set inside a session exercise. Has a *target* (what was planned) and *actuals* (what happened). |
@@ -71,6 +71,16 @@ Exercise types and what a set records:
 | `weighted` | weight + reps | Bench Press |
 | `bodyweight` | reps + optional added weight | Pull-up, Dip |
 | `timed` | duration (seconds) + optional weight | Plank |
+| `sport` | duration only (see §4.1b) | Pickleball, Tennis |
+
+### 4.1b Sports
+A **sport** (pickleball, badminton, basketball, tennis, soccer, volleyball as presets; custom sports too) is an exercise of type `sport`, logged by **time**, not sets.
+- **Its own session**: a sport is never inside a gym workout, and never in a template. The gym exercise pickers don't list sports.
+- **Live timer**: start it from Today ("Start a sport") or the center Start sheet, pick the sport, play with a timer running, then Finish: the minutes come from the timer and can be edited, plus optional notes and "Share with friends" (default from settings). Times can be corrected later on the edit screen (the duration follows the start and finish times).
+- **Shown as time only**: history, session detail and the feed show the duration and "Sport", no sets, volume or exercises count. The exercise page charts time per session.
+- **No personal records, no volume.**
+- **Counts as activity, not as a workout**: sport days are marked on the calendar, the year grid and the week strip ("active days"), but the workout counts (this week / month / year / total) and lifetime volume exclude sports. Their minutes appear as **Active minutes** (this week, this month) on Progress, once you have logged a sport.
+- **Social**: shared sports appear in friends' feeds ("Pickleball · 1h 15m · Sport"), with reactions, and notify friends like a workout.
 
 ### 4.2 Templates
 - Create / edit / duplicate / delete templates.
