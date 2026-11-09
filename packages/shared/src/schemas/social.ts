@@ -84,6 +84,8 @@ export type FeedItem = {
   durationSec: number
   exerciseCount: number
   setCount: number
+  /** A sport session (time only): the card shows no exercise or set counts. */
+  sport: boolean
   prs: FeedPR[]
   reactions: ReactionCounts
   myReaction: ReactionEmoji | null

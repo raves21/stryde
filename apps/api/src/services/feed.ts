@@ -1,7 +1,7 @@
 import type { FeedItem, FeedPage, FeedPR } from '@stryde/shared'
 import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Db } from '../db/client'
-import { feedEvents, sessionExercises, sessions, sets, user } from '../db/schema'
+import { exercises, feedEvents, sessionExercises, sessions, sets, user } from '../db/schema'
 import { friendIds } from './friend-graph'
 import { publicProfile } from './friends'
 import { reactionSummary } from './reactions'
@@ -75,6 +75,21 @@ export async function getFeed(
       .groupBy(sessionExercises.sessionId)
     for (const g of grouped) counts.set(g.sessionId, { exercises: g.exercises, sets: g.sets })
   }
+  // A session is a sport when every exercise in it is one (sports are their own sessions).
+  const sport = new Set<string>()
+  if (sessionIds.length > 0) {
+    const kinds = await db
+      .select({ sessionId: sessionExercises.sessionId, type: exercises.type })
+      .from(sessionExercises)
+      .innerJoin(exercises, eq(exercises.id, sessionExercises.exerciseId))
+      .where(
+        and(inArray(sessionExercises.sessionId, sessionIds), isNull(sessionExercises.deletedAt)),
+      )
+    const byType = new Map<string, Set<string>>()
+    for (const k of kinds)
+      byType.set(k.sessionId, (byType.get(k.sessionId) ?? new Set()).add(k.type))
+    for (const [id, types] of byType) if (types.size === 1 && types.has('sport')) sport.add(id)
+  }
   const reacted = await reactionSummary(db, me, sessionIds)
 
   const items: FeedItem[] = page.map(({ event, session, actor }) => {
@@ -94,6 +109,7 @@ export async function getFeed(
       ),
       exerciseCount: c?.exercises ?? 0,
       setCount: c?.sets ?? 0,
+      sport: sport.has(session.id),
       prs: event.prs as FeedPR[],
       reactions: r?.counts ?? {},
       myReaction: r?.mine ?? null,

@@ -53,7 +53,7 @@ describe.skipIf(!hasDatabase)('database', () => {
     expect(new Set(PRESET_EXERCISES.map((p) => p.id)).size).toBe(PRESET_EXERCISES.length)
     expect(new Set(PRESET_EXERCISES.map((p) => p.muscleGroup)).size).toBe(14)
     expect(new Set(PRESET_EXERCISES.map((p) => p.type))).toEqual(
-      new Set(['weighted', 'bodyweight', 'timed']),
+      new Set(['weighted', 'bodyweight', 'timed', 'sport']),
     )
   })
 

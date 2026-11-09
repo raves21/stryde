@@ -55,13 +55,16 @@ describe('setRowSchema', () => {
 })
 
 describe('setCompletionError', () => {
-  it.each<[string, Partial<SetRow>, 'weighted' | 'bodyweight' | 'timed', boolean]>([
+  it.each<[string, Partial<SetRow>, 'weighted' | 'bodyweight' | 'timed' | 'sport', boolean]>([
     ['not completed', {}, 'weighted', true],
     ['weighted with reps', { reps: 5, completedAt: NOW }, 'weighted', true],
     ['weighted with only a duration', { durationSec: 30, completedAt: NOW }, 'weighted', false],
     ['bodyweight with reps', { reps: 12, completedAt: NOW }, 'bodyweight', true],
     ['timed with duration', { durationSec: 90, completedAt: NOW }, 'timed', true],
     ['timed with only reps', { reps: 1, completedAt: NOW }, 'timed', false],
+    ['sport with a duration', { durationSec: 5400, completedAt: NOW }, 'sport', true],
+    ['sport with only reps', { reps: 1, completedAt: NOW }, 'sport', false],
+    ['sport not completed yet', {}, 'sport', true],
     ['rir set without rir', { targetKind: 'rir', reps: 5, completedAt: NOW }, 'weighted', false],
   ])('%s (%s) → ok=%s', (_, patch, type, ok) => {
     expect(setCompletionError({ ...set, ...patch }, type) === null).toBe(ok)

@@ -171,10 +171,13 @@ export function setCompletionError(
   exerciseType: ExerciseType,
 ): string | null {
   if (set.completedAt === null) return null
-  if (exerciseType === 'timed' && set.durationSec === null) {
-    return 'A completed timed set needs a duration'
+  const byTime = exerciseType === 'timed' || exerciseType === 'sport'
+  if (byTime && set.durationSec === null) {
+    return exerciseType === 'sport'
+      ? 'A completed sport needs a duration'
+      : 'A completed timed set needs a duration'
   }
-  if (exerciseType !== 'timed' && set.reps === null) return 'A completed set needs reps'
+  if (!byTime && set.reps === null) return 'A completed set needs reps'
   if (set.targetKind === 'rir' && set.rir === null) return 'A completed RIR set needs rir'
   return null
 }

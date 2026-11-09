@@ -687,6 +687,56 @@ export const PRESET_EXERCISES: Preset[] = [
     equipment: 'band',
     defaultRestSeconds: 60,
   },
+
+  // Sports (type 'sport'): logged by time, no sets or records.
+  {
+    id: '01a1be36-b465-77d3-89d9-8bf24d799876',
+    name: 'Pickleball',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
+  {
+    id: '01a1be36-b466-74e8-8267-3e629e51879e',
+    name: 'Badminton',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
+  {
+    id: '01a1be36-b466-74e8-8267-40dd20b2a40d',
+    name: 'Basketball',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
+  {
+    id: '01a1be36-b466-74e8-8267-47f1ab1e3f82',
+    name: 'Tennis',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
+  {
+    id: '01a1be36-b466-74e8-8267-4bb121d814dd',
+    name: 'Soccer',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
+  {
+    id: '01a1be36-b466-74e8-8267-4cfed2404245',
+    name: 'Volleyball',
+    type: 'sport',
+    muscleGroup: 'cardio',
+    equipment: 'other',
+    defaultRestSeconds: 60,
+  },
 ]
 
 const PRESET_CREATED_AT = new Date('2026-10-24T00:00:00Z')

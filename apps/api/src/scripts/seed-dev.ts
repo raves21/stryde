@@ -48,6 +48,8 @@ type Workout = {
   agoMin: number
   durationMin: number
   lifts: Lift[]
+  /** A sport session (time only) instead of lifts. */
+  sport?: { exercise: string; minutes: number }
   reactions?: [by: string, emoji: 'muscle' | 'fire' | 'clap' | 'trophy' | 'grimace'][]
 }
 
@@ -60,6 +62,23 @@ const w = (
   lifts: Lift[],
   reactions?: Workout['reactions'],
 ): Workout => ({ key, owner, name, agoMin, durationMin, lifts, reactions })
+const play = (
+  key: string,
+  owner: string,
+  sport: string,
+  agoMin: number,
+  minutes: number,
+  reactions?: Workout['reactions'],
+): Workout => ({
+  key,
+  owner,
+  name: sport,
+  agoMin,
+  durationMin: minutes,
+  lifts: [],
+  sport: { exercise: sport, minutes },
+  reactions,
+})
 const d = (days: number) => days * 24 * 60
 
 // Earlier, lighter sessions come first so the recent ones set personal records.
@@ -508,6 +527,18 @@ const WORKOUTS: Workout[] = [
     ],
     [['sam_ok', 'trophy']],
   ),
+
+  // Sports (time only): no PRs, shown as "Sport" and counted as active minutes.
+  play('aiko-pickleball', 'aiko_t', 'Pickleball', 3 * d(1) + 20, 75, [
+    ['sam_ok', 'fire'],
+    ['demo', 'muscle'],
+  ]),
+  play('sam-basketball', 'sam_ok', 'Basketball', d(1) + 60, 60, [['marco_r', 'clap']]),
+  play('demo-tennis', 'demo', 'Tennis', 2 * d(1) + 30, 90, [
+    ['lena_f', 'fire'],
+    ['diego_s', 'clap'],
+  ]),
+  play('demo-pickleball', 'demo', 'Pickleball', 5 * d(1) + 45, 60),
 ]
 
 const exerciseId = (name: string) => {
@@ -575,6 +606,41 @@ function rows(userId: string, wo: Workout, now: number) {
       },
     },
   ]
+  if (wo.sport) {
+    // A sport: one sport exercise with one set that holds the time.
+    const seId = id(`${wo.key}:ex:0`)
+    out.push({
+      table: 'sessionExercises',
+      row: {
+        ...stamp,
+        id: seId,
+        sessionId,
+        exerciseId: exerciseId(wo.sport.exercise),
+        position: 0,
+        supersetGroup: null,
+        restSeconds: null,
+      },
+    })
+    out.push({
+      table: 'sets',
+      row: {
+        ...stamp,
+        id: id(`${wo.key}:ex:0:set:0`),
+        sessionExerciseId: seId,
+        position: 0,
+        setType: 'working',
+        targetKind: 'fixed',
+        targetReps: null,
+        targetRepsMax: null,
+        targetRir: null,
+        weightKg: null,
+        reps: null,
+        rir: null,
+        durationSec: wo.sport.minutes * 60,
+        completedAt: iso(startedAt + wo.sport.minutes * MIN),
+      },
+    })
+  }
   for (const [i, lift] of wo.lifts.entries()) {
     const seId = id(`${wo.key}:ex:${i}`)
     out.push({

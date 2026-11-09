@@ -4,7 +4,8 @@
 export const WEIGHT_UNITS = ['kg', 'lb'] as const
 export type WeightUnit = (typeof WEIGHT_UNITS)[number]
 
-export const EXERCISE_TYPES = ['weighted', 'bodyweight', 'timed'] as const
+/** `sport`: logged by time (pickleball, tennis…), no sets, weights or PRs; always its own session. */
+export const EXERCISE_TYPES = ['weighted', 'bodyweight', 'timed', 'sport'] as const
 export type ExerciseType = (typeof EXERCISE_TYPES)[number]
 
 export const MUSCLE_GROUPS = [

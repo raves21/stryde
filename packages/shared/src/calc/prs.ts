@@ -39,6 +39,8 @@ export function detectPRs(
   history: CalcSet[][],
   session: CalcSet[],
 ): DetectedPR[] {
+  // A sport is about time spent, not records: no PRs.
+  if (exerciseType === 'sport') return []
   const past = history.map(countedSets).filter((s) => s.length > 0)
   const now = countedSets(session)
   if (past.length === 0 || now.length === 0) return []

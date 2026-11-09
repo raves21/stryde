@@ -70,6 +70,12 @@ export function totalReps(sets: CalcSet[]): number | null {
   return reps.length ? reps.reduce((a, b) => a + b, 0) : null
 }
 
+/** Total counted time in seconds (a sport session's length; null without durations). */
+export function totalDuration(sets: CalcSet[]): number | null {
+  const d = countedSets(sets).flatMap((s) => (s.durationSec === null ? [] : [s.durationSec]))
+  return d.length ? d.reduce((sum, v) => sum + v, 0) : null
+}
+
 /** Longest counted hold in seconds (null without durations). */
 export function longestDuration(sets: CalcSet[]): number | null {
   const d = countedSets(sets).flatMap((s) => (s.durationSec === null ? [] : [s.durationSec]))

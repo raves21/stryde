@@ -6,7 +6,7 @@ import {
   seriesForChart,
   sessionMetric,
 } from './history'
-import { type CalcSet, longestDuration, maxReps, totalReps } from './sets'
+import { type CalcSet, longestDuration, maxReps, totalDuration, totalReps } from './sets'
 
 let n = 0
 function s(weightKg: number | null, reps: number | null, over: Partial<CalcSet> = {}): CalcSet {
@@ -41,6 +41,16 @@ describe('per-session aggregates', () => {
       75,
     ],
     ['maxReps without reps', maxReps, [s(null, null, { durationSec: 60 })], null],
+    [
+      'totalDuration',
+      totalDuration,
+      [
+        s(null, null, { durationSec: 3600 }),
+        s(null, null, { durationSec: 1800, setType: 'warmup' }),
+      ],
+      3600,
+    ],
+    ['totalDuration without durations', totalDuration, [s(null, 10)], null],
   ])('%s', (_, f, sets, expected) => {
     expect(f(sets)).toBe(expected)
   })
@@ -138,5 +148,20 @@ describe('seriesForChart', () => {
       [10, false],
       [20, false],
     ])
+  })
+})
+
+describe('sport sessions', () => {
+  const play = (n: number, minutes: number) =>
+    session(n, [s(null, null, { durationSec: minutes * 60 })])
+
+  it('chart metric "total_time" is the time played, and never marks a PR', () => {
+    const sessions = [play(1, 60), play(2, 90), play(3, 120)]
+    expect(seriesForChart('sport', sessions, 'total_time').map((p) => [p.value, p.isPR])).toEqual([
+      [3600, false],
+      [5400, false],
+      [7200, false],
+    ])
+    expect(computeAllPRs('sport', sessions)).toEqual([])
   })
 })

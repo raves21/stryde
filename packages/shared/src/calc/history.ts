@@ -7,6 +7,7 @@ import {
   longestDuration,
   maxReps,
   sessionVolume,
+  totalDuration,
   totalReps,
 } from './sets'
 
@@ -52,6 +53,7 @@ export const CHART_METRICS = {
   weighted: ['e1rm', 'best_set', 'volume'],
   bodyweight: ['max_reps', 'total_reps', 'e1rm'],
   timed: ['duration'],
+  sport: ['total_time'],
 } as const satisfies Record<ExerciseType, readonly string[]>
 export type ChartMetric = (typeof CHART_METRICS)[ExerciseType][number]
 
@@ -63,6 +65,7 @@ const METRIC_PR: Record<ChartMetric, PrType | null> = {
   max_reps: 'max_reps',
   total_reps: null,
   duration: 'duration',
+  total_time: null,
 }
 
 /** A session's value for a chart metric (null when it has none). */
@@ -84,6 +87,8 @@ export function sessionMetric(metric: ChartMetric, sets: CalcSet[]): number | nu
       return totalReps(sets)
     case 'duration':
       return longestDuration(sets)
+    case 'total_time':
+      return totalDuration(sets)
   }
 }
 

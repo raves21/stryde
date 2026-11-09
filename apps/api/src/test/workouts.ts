@@ -112,3 +112,54 @@ export async function befriend(a: { cookie: string }, b: { cookie: string }) {
   const accepted = await postJson(`/api/friends/requests/${id}/accept`, {}, b.cookie)
   expect(accepted.status).toBe(200)
 }
+
+export const PICKLEBALL = PRESET_EXERCISES.find((e) => e.name === 'Pickleball')?.id ?? ''
+
+/** A finished sport session: one sport exercise and one completed set holding the time. */
+export function sportSession(
+  userId: string,
+  o: { name?: string; minutes?: number; finishedAgoMs?: number; reps?: number | null } = {},
+) {
+  const minutes = o.minutes ?? 90
+  const finishedAt = Date.now() - (o.finishedAgoMs ?? 0)
+  const startedAt = finishedAt - minutes * 60_000
+  const common = { userId, createdAt: iso(startedAt), updatedAt: iso(finishedAt), deletedAt: null }
+  const session = {
+    ...common,
+    id: uuidv7(),
+    templateId: null,
+    name: o.name ?? 'Pickleball',
+    startedAt: iso(startedAt),
+    finishedAt: iso(finishedAt),
+    timezone: 'UTC',
+    localDate: iso(startedAt).slice(0, 10),
+    notes: 'Doubles',
+    shareWithFriends: true,
+  }
+  const se = {
+    ...common,
+    id: uuidv7(),
+    sessionId: session.id,
+    exerciseId: PICKLEBALL,
+    position: 0,
+    supersetGroup: null,
+    restSeconds: null,
+  }
+  const set = {
+    ...common,
+    id: uuidv7(),
+    sessionExerciseId: se.id,
+    position: 0,
+    setType: 'working',
+    targetKind: 'fixed',
+    targetReps: null,
+    targetRepsMax: null,
+    targetRir: null,
+    weightKg: null,
+    reps: o.reps ?? null,
+    rir: null,
+    durationSec: o.reps ? null : minutes * 60,
+    completedAt: iso(finishedAt),
+  }
+  return { session, se, set, rows: rowsOf({ session, se, set }) }
+}

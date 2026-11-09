@@ -74,7 +74,9 @@ describe('detectPRs', () => {
     expect(detectPRs('weighted', [[warmup(40, 10)], []], [s(100, 5)])).toEqual([])
   })
 
-  it.each<[string, 'weighted' | 'bodyweight' | 'timed', CalcSet[][], CalcSet[], string[]]>([
+  it.each<
+    [string, 'weighted' | 'bodyweight' | 'timed' | 'sport', CalcSet[][], CalcSet[], string[]]
+  >([
     ['no improvement', 'weighted', [[s(100, 5)]], [s(100, 5)], []],
     [
       'heavier weight → e1rm, weight, volume',
@@ -142,6 +144,8 @@ describe('detectPRs', () => {
     ],
     ['timed: longer hold → duration', 'timed', [[timed(60)]], [timed(90)], ['duration']],
     ['timed: shorter hold → nothing', 'timed', [[timed(60)]], [timed(45)], []],
+    // A sport is about time spent, never records.
+    ['sport: a longer session is not a PR', 'sport', [[timed(3600)]], [timed(7200)], []],
     ['reps > 15 has no e1RM', 'weighted', [[s(20, 20)]], [s(20, 22)], ['reps_at_weight', 'volume']],
   ])('%s', (_, type, history, session, expected) => {
     expect(types(detectPRs(type, history, session))).toEqual(expected)
