@@ -1,6 +1,6 @@
 # Progress
 ## Current phase
-Phase 9 — Notifications: Web Push, SSE, Rest-Timer Push (`plan/phase-09-notifications.md`): **implemented and verified locally** (v2). Phases 0–8 are live at https://stryde.obnsolutions.org (home server, auto-deploy on push to `main`). Phase 9 needs the owner to add VAPID keys on the server and test on real phones before it can be called done (`docs/deploy-home-server.md` §9, `BLOCKERS.md`). Next: Phase 10 (VPS guide, docs only) if wanted.
+Sports (post-v2 addition, 2026-11-09) on top of Phase 9 — Notifications (`plan/phase-09-notifications.md`): **implemented and verified locally** (v2). Phases 0–8 are live at https://stryde.obnsolutions.org (home server, auto-deploy on push to `main`); sports ship with the next push (migration `0003`). Phase 9 needs the owner to add VAPID keys on the server and test on real phones before it can be called done (`docs/deploy-home-server.md` §9, `BLOCKERS.md`). Next: Phase 10 (VPS guide, docs only) if wanted.
 (Phase 1 still has one owner-verification item: real Google sign-in.)
 ## Done
 - [x] Phase 0 — Scaffold
@@ -204,7 +204,6 @@ Phase 9 — Notifications: Web Push, SSE, Rest-Timer Push (`plan/phase-09-notifi
 - `requestSync()` (`sync/controller.ts`) syncs immediately (used after finishing a workout and by the indicator's Retry); Settings → "Sync now" (Phase 6) should call it too.
 - Vite dev may reload once the first time a newly used dependency is imported (e.g. recharts); harmless, but browser scripts should allow for it.
 - Offline checks in `bun run dev` still need route chunks loaded first (no service worker in dev); use the production build (`bun run e2e`, or `vite build && vite preview`) for real offline behaviour.
-- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5) and maintains feed events (Phase 8); notifications (`services/notify.ts`, currently a no-op) and SSE hints (Phase 9) go there too.
+- `onSessionsChanged` (`apps/api/src/services/session-effects.ts`) recomputes PRs (Phase 5), maintains feed events (Phase 8), and triggers notifications (`services/notify.ts`) and SSE hints (Phase 9).
 - `bun run e2e` (Playwright, `apps/web/e2e/`) needs the dev Postgres; it uses `<db>_e2e` and ports 3100/5180. First run on a machine: `cd apps/web && bunx playwright install chromium`.
 - Local port clash: if 3000 is taken (e.g. another project's dev server), run `PORT=3001 STRYDE_API_PORT=3001 bun run dev`.
-- Verify `web-push` works under Bun (test planned in Phase 9).
