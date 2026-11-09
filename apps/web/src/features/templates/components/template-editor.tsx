@@ -42,6 +42,7 @@ import {
 } from '@/db/repositories/templates'
 import { ExercisePicker } from '@/features/exercises/components/exercise-picker'
 import { useUnit } from '@/features/settings/use-settings'
+import { useUnsavedWork } from '@/lib/unsaved-work'
 import {
   addExercise,
   addSet,
@@ -93,6 +94,8 @@ export function TemplateEditor({ tree }: { tree?: TemplateTree }) {
   const nameRef = useRef<HTMLInputElement>(null)
   const { template } = draft
   const dirty = draftSignature(draft) !== baselineSig
+  // An automatic app update must not reload an unsaved draft away.
+  useUnsavedWork(dirty)
 
   // A new template opens with its name field active.
   useEffect(() => {

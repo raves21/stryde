@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { resolveSession, revalidateSession } from '@/features/auth/session'
 import { EventsRuntime } from '@/features/notifications/components/events-runtime'
 import { PushRuntime } from '@/features/notifications/components/push-runtime'
-import { UpdatePrompt } from '@/features/pwa/components/update-prompt'
+import { AutoUpdate } from '@/features/pwa/components/auto-update'
 import { SyncRuntime } from '@/features/sync/sync-runtime'
 
 const PUBLIC_PATHS = new Set(['/login', '/signup'])
@@ -61,7 +61,7 @@ function RootLayout() {
         <Outlet />
       )}
       <Toaster position="top-center" />
-      <UpdatePrompt />
+      <AutoUpdate />
     </div>
   )
 }

@@ -173,7 +173,7 @@ ssh-copy-id -i stryde_deploy.pub <user>@<zerotier-ip>     # adds it to authorize
 - **Automatic:** merge or push to `main`. CI runs; when it passes, **Deploy** builds the image (tags `latest` and the commit SHA), pushes it to GHCR, joins ZeroTier, SSHes in, sets `IMAGE_TAG=<sha>` in `.env`, runs `docker compose pull app && docker compose up -d app`, prunes old images, and waits until the app reports the new SHA on `127.0.0.1:$APP_PORT/api/health` (checked on the server over SSH; the job fails after ~5 minutes otherwise, printing `docker compose ps` and the app log). A last, non-fatal step checks the public URL and only warns: Cloudflare's bot protection answers GitHub's runners with 403 even though the site works.
 - **Manual:** Actions → Deploy → Run workflow, leave `tag` empty to build and deploy the current `main`.
 
-Updates reach phones safely: the app shows "Update available — Reload" and never reloads during an active workout.
+Updates reach phones safely and by themselves: the app downloads the new version in the background and applies it (a reload) shortly after you leave the app, or when you come back after a longer break, and only when nothing is in progress: never during an active workout, with an unsaved template draft or an open form, or on the sign-in screens. If it can't apply it, the new version takes over the next time the app is closed and reopened.
 
 ## 7. Rolling back
 
@@ -246,7 +246,7 @@ Notes:
 | Deploy job: health check never reports the SHA | The job prints the app log; otherwise `docker compose logs app` on the server (migration or env error); `.env` has an `IMAGE_TAG=` line and `APP_PORT` matches the published port |
 | Deploy job warns the public URL answered 403 | Expected from GitHub's runners (Cloudflare bot protection). Check the site from your own browser instead |
 | `docker compose pull` denied | GHCR package is private and the server isn't logged in (§2.3) |
-| Phones keep an old version | They show "Update available" on the next visit; `sw.js` and `index.html` must not be edge-cached (§3.2) |
+| Phones keep an old version | They update themselves the next time you leave and reopen the app (or on a cold start); `sw.js` and `index.html` must not be edge-cached (§3.2) |
 | Local `docker build` hangs downloading packages | A local Docker network issue (seen with ZeroTier's MTU): build with `docker build --network host -f docker/Dockerfile .` |
 
 ## 11. Fallback: self-hosted runner

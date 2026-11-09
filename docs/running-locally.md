@@ -134,7 +134,7 @@ If a port is busy (another dev server, another project's Postgres), don't stop i
 | "Invalid origin" when signing in | `PUBLIC_URL` doesn't match the address in the browser bar |
 | Blank page or stale UI after switching between dev and a production build | DevTools → Application → Service Workers → Unregister, then Clear site data |
 | Want a clean slate | Sign out and clear site data (this removes the local IndexedDB), and `docker compose -f docker/compose.dev.yml down -v` to wipe the server database |
-| "Update available" toast never appears in dev | Expected: there is no service worker in dev |
+| App updates never apply in dev | Expected: there is no service worker in dev (updates are automatic only in a production build) |
 | Changed a route file and `typecheck` fails | The route tree regenerates when Vite runs: start `bun run dev` or run `cd apps/web && bunx vite build` once |
 | Port 3000 busy but you want the defaults | See [Port clashes](#port-clashes) |
 

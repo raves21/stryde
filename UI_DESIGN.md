@@ -262,7 +262,7 @@ All primitives come from **shadcn/ui** (installed with the shadcn CLI into `src/
 | `Card` | stat tiles, feed cards, template cards |
 | `Avatar` | (shadcn, no longer used for people: see `UserAvatar`) |
 | `Skeleton` | loading states |
-| `Sonner` (toast) | undo delete, "Update available", errors |
+| `Sonner` (toast) | undo delete, errors (app updates are automatic, no toast) |
 | `Chart` (Recharts wrapper) | exercise progress charts |
 | `Progress` | rest timer bar, workout progress line |
 | `Separator`, `ScrollArea` | lists, horizontal chip rows |

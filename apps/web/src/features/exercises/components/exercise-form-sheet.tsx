@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { createExercise, updateExercise } from '@/db/repositories/exercises'
+import { useUnsavedWork } from '@/lib/unsaved-work'
 import {
   EQUIPMENT_LABELS,
   EXERCISE_TYPE_LABELS,
@@ -59,6 +60,8 @@ export function ExerciseFormSheet({
   onSaved?: (exercise: ExerciseRow) => void
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY)
+  // An open form holds typed values: no automatic app update meanwhile.
+  useUnsavedWork(open)
   const [pending, setPending] = useState(false)
 
   useEffect(() => {

@@ -20,7 +20,7 @@ Stryde installs like a native app on Android and iOS, cold-starts with no networ
 
 ### 3. Update flow
 - New SW waits (`registerType: 'prompt'`).
-- Show a Sonner toast "Update available — Reload".
+- ~~Show a Sonner toast "Update available — Reload".~~ Superseded 2026-11-09: updates apply automatically when it is safe (`features/pwa/components/auto-update.tsx`), no toast.
 - **Never reload while a workout is active**: if active, defer the toast until the workout is finished.
 
 ### 4. Install guide (`/settings/install` + onboarding step)
