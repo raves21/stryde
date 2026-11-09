@@ -10,6 +10,7 @@ import { PRBadge } from '@/components/app/pr-badge'
 import { SetTable } from '@/components/sets/set-table'
 import type { ExerciseSession } from '@/lib/training'
 import { formatDuration } from '@/lib/workout'
+import { formatSpan } from '../use-training'
 
 /**
  * One past session of an exercise: date, a summary line and a PR badge, then its sets
@@ -34,12 +35,16 @@ export function ExerciseHistoryCard({
   const working = countedSets(session.sets)
   const volume = sessionVolume(session.sets)
   const totalSec = working.reduce((sum, s) => sum + (s.durationSec ?? 0), 0)
-  const summary = [
-    `${working.length} ${working.length === 1 ? 'set' : 'sets'}`,
-    type === 'timed'
-      ? totalSec > 0 && `${formatDuration(totalSec)} total`
-      : volume > 0 && `${toDisplayWeight(volume, unit, 0).toLocaleString()} ${unit} volume`,
-  ].filter(Boolean)
+  // A sport is just the time played: no sets to count or show.
+  const summary =
+    type === 'sport'
+      ? [formatSpan(totalSec * 1000)]
+      : [
+          `${working.length} ${working.length === 1 ? 'set' : 'sets'}`,
+          type === 'timed'
+            ? totalSec > 0 && `${formatDuration(totalSec)} total`
+            : volume > 0 && `${toDisplayWeight(volume, unit, 0).toLocaleString()} ${unit} volume`,
+        ].filter(Boolean)
 
   return (
     <div className="flex flex-col gap-3">
@@ -52,7 +57,7 @@ export function ExerciseHistoryCard({
         </div>
         {prCount > 0 && <PRBadge count={prCount} className="shrink-0" />}
       </header>
-      <SetTable sets={done} type={type} unit={unit} prSetIds={prSetIds} />
+      {type !== 'sport' && <SetTable sets={done} type={type} unit={unit} prSetIds={prSetIds} />}
     </div>
   )
 }

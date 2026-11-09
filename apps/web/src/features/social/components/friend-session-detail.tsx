@@ -16,6 +16,9 @@ import { ReactionBar } from './reaction-bar'
 export function FriendSessionDetail({ session }: { session: SessionDetail }) {
   const unit = useUnit()
   const { owner } = session
+  // A sport is just its time (and notes): no set tables.
+  const sportOnly =
+    session.exercises.length > 0 && session.exercises.every((e) => e.type === 'sport')
   const sets = session.exercises.reduce(
     (n, e) => n + e.sets.filter((s) => s.setType === 'working').length,
     0,
@@ -39,7 +42,11 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
           label="Duration"
           value={formatSpan(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}
         />
-        <StatTile label="Sets" value={String(sets)} />
+        {sportOnly ? (
+          <StatTile label="Sport" value={session.name} />
+        ) : (
+          <StatTile label="Sets" value={String(sets)} />
+        )}
       </div>
 
       {session.prs.length > 0 && (
@@ -62,24 +69,25 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
       )}
 
       <section className="flex flex-col gap-3">
-        {session.exercises.map((exercise) => {
-          return (
-            <article
-              key={exercise.id}
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
-            >
-              <header className="flex items-center gap-2">
-                {exercise.supersetGroup && (
-                  <span className="rounded-full bg-brand-dim px-2 font-display text-sm font-bold text-brand">
-                    {exercise.supersetGroup}
-                  </span>
-                )}
-                <h2 className="truncate font-semibold">{exercise.name}</h2>
-              </header>
-              <SetTable sets={exercise.sets} type={exercise.type} unit={unit} />
-            </article>
-          )
-        })}
+        {!sportOnly &&
+          session.exercises.map((exercise) => {
+            return (
+              <article
+                key={exercise.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
+              >
+                <header className="flex items-center gap-2">
+                  {exercise.supersetGroup && (
+                    <span className="rounded-full bg-brand-dim px-2 font-display text-sm font-bold text-brand">
+                      {exercise.supersetGroup}
+                    </span>
+                  )}
+                  <h2 className="truncate font-semibold">{exercise.name}</h2>
+                </header>
+                <SetTable sets={exercise.sets} type={exercise.type} unit={unit} />
+              </article>
+            )
+          })}
       </section>
 
       {session.notes && (

@@ -23,7 +23,9 @@ export function SessionListItem({ summary }: { summary: SessionSummary }) {
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-semibold">{session.name}</span>
         <span className="tnum text-sm text-muted-foreground">
-          {formatSpan(summary.durationMs)} · {summary.sets} {summary.sets === 1 ? 'set' : 'sets'}
+          {summary.sport
+            ? `${formatSpan(summary.durationMs)} · Sport`
+            : `${formatSpan(summary.durationMs)} · ${summary.sets} ${summary.sets === 1 ? 'set' : 'sets'}`}
         </span>
       </span>
       {summary.prs.length > 0 && <PRBadge count={summary.prs.length} />}

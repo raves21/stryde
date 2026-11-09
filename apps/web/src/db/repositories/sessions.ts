@@ -47,6 +47,80 @@ async function insertSession(
   })
 }
 
+/**
+ * Start a sport (pickleball, tennis…): a session named after it, with one sport exercise
+ * and one open "set" that holds the time once finished. A sport is always its own session.
+ */
+export function startSportSession(exerciseId: string, db: StrydeDb = defaultDb) {
+  return mutate(
+    [...TABLES],
+    async (w) => {
+      const sport = await w.get('exercises', exerciseId)
+      if (sport?.type !== 'sport') throw new Error('Not a sport')
+      const session = await insertSession(w, { name: sport.name })
+      const se = await w.insert('sessionExercises', {
+        sessionId: session.id,
+        exerciseId,
+        position: 0,
+        supersetGroup: null,
+        restSeconds: null,
+      })
+      await w.insert('sets', {
+        sessionExerciseId: se.id,
+        position: 0,
+        setType: 'working',
+        targetKind: 'fixed',
+        targetReps: null,
+        targetRepsMax: null,
+        targetRir: null,
+        weightKg: null,
+        reps: null,
+        rir: null,
+        durationSec: null,
+        completedAt: null,
+      })
+      return session
+    },
+    db,
+  )
+}
+
+/**
+ * Finish a sport. `durationSec` (the timer, as edited) is the truth: the session is moved to
+ * end now and start that long before, so its times and its one set agree.
+ */
+export function finishSportSession(
+  id: string,
+  {
+    durationSec,
+    notes,
+    shareWithFriends,
+  }: { durationSec: number } & Pick<SessionRow, 'notes' | 'shareWithFriends'>,
+  db: StrydeDb = defaultDb,
+) {
+  return mutate(
+    [...TABLES],
+    async (w) => {
+      const session = await w.get('sessions', id)
+      if (!session) throw new Error('Session not found')
+      const startedAt = new Date(Date.parse(w.now) - durationSec * 1000).toISOString()
+      for (const se of await getSessionExercises(id, w.db)) {
+        for (const set of await getSets(se.id, w.db)) {
+          await w.update('sets', set.id, { durationSec, completedAt: w.now })
+        }
+      }
+      return w.update('sessions', id, {
+        startedAt,
+        finishedAt: w.now,
+        localDate: localDateIn(new Date(startedAt), session.timezone),
+        notes,
+        shareWithFriends,
+      })
+    },
+    db,
+  )
+}
+
 /** Start an empty workout named "Workout". */
 export function startEmptySession(db: StrydeDb = defaultDb) {
   return startSession({ name: 'Workout' }, db)
@@ -102,11 +176,25 @@ export function updateSessionTimes(
     async (w) => {
       const session = await w.get('sessions', id)
       if (!session) throw new Error('Session not found')
-      return w.update('sessions', id, {
+      const updated = await w.update('sessions', id, {
         startedAt,
         finishedAt,
         localDate: localDateIn(new Date(startedAt), session.timezone),
       })
+      // A sport's one set holds its time: keep it equal to the session's length.
+      if (finishedAt !== null) {
+        const durationSec = Math.max(
+          0,
+          Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000),
+        )
+        for (const se of await getSessionExercises(id, w.db)) {
+          if ((await w.db.exercises.get(se.exerciseId))?.type !== 'sport') continue
+          for (const set of await getSets(se.id, w.db)) {
+            await w.update('sets', set.id, { durationSec })
+          }
+        }
+      }
+      return updated
     },
     db,
   )

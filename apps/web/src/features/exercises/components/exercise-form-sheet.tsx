@@ -47,17 +47,30 @@ const EMPTY: Draft = {
   defaultRestSeconds: null,
 }
 
-/** Create a custom exercise, or edit one (`exercise` given). */
+const GRID_COLS = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+} as const
+
+/**
+ * Create a custom exercise, or edit one (`exercise` given). `types` limits the choices: the
+ * gym picker leaves out Sport, the sport picker offers only Sport (and then hides the
+ * choice). A sport has no muscle group, equipment or rest, so those fields are hidden.
+ */
 export function ExerciseFormSheet({
   open,
   onOpenChange,
   exercise,
   onSaved,
+  types = EXERCISE_TYPES,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   exercise?: ExerciseRow
   onSaved?: (exercise: ExerciseRow) => void
+  types?: readonly ExerciseType[]
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY)
   // An open form holds typed values: no automatic app update meanwhile.
@@ -75,9 +88,9 @@ export function ExerciseFormSheet({
             equipment: exercise.equipment,
             defaultRestSeconds: exercise.defaultRestSeconds,
           }
-        : EMPTY,
+        : { ...EMPTY, type: types[0] ?? EMPTY.type },
     )
-  }, [open, exercise])
+  }, [open, exercise, types])
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
@@ -87,9 +100,14 @@ export function ExerciseFormSheet({
     if (!draft.name.trim()) return
     setPending(true)
     try {
+      // A sport is just a name: no muscle group, equipment or rest.
+      const values: Draft =
+        draft.type === 'sport'
+          ? { ...draft, muscleGroup: 'cardio', equipment: 'other', defaultRestSeconds: null }
+          : draft
       const saved = exercise
-        ? await updateExercise(exercise.id, draft)
-        : await createExercise(draft)
+        ? await updateExercise(exercise.id, values)
+        : await createExercise(values)
       onSaved?.(saved)
       onOpenChange(false)
     } catch (error) {
@@ -103,7 +121,7 @@ export function ExerciseFormSheet({
     <BottomSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={exercise ? 'Edit exercise' : 'New exercise'}
+      title={`${exercise ? 'Edit' : 'New'} ${draft.type === 'sport' ? 'sport' : 'exercise'}`}
     >
       <form id="exercise-form" onSubmit={onSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
@@ -113,87 +131,101 @@ export function ExerciseFormSheet({
             value={draft.name}
             maxLength={100}
             onChange={(e) => set('name', e.target.value)}
-            placeholder="e.g. Landmine Press"
+            placeholder={draft.type === 'sport' ? 'e.g. Table tennis' : 'e.g. Landmine Press'}
             required
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <Label>Type</Label>
-          <ToggleGroup
-            type="single"
-            value={draft.type}
-            onValueChange={(v) => v && set('type', v as ExerciseType)}
-            className="grid w-full grid-cols-3"
-            spacing={2}
-            aria-label="Exercise type"
-          >
-            {EXERCISE_TYPES.map((t) => (
-              <ToggleGroupItem
-                key={t}
-                value={t}
-                className="h-12 bg-surface-2 data-[state=on]:bg-brand-dim data-[state=on]:text-brand"
-              >
-                {EXERCISE_TYPE_LABELS[t]}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
+        {types.length > 1 && (
           <div className="flex flex-col gap-2">
-            <Label htmlFor="exercise-muscle">Muscle group</Label>
-            <Select
-              value={draft.muscleGroup}
-              onValueChange={(v) => set('muscleGroup', v as MuscleGroup)}
+            <Label>Type</Label>
+            <ToggleGroup
+              type="single"
+              value={draft.type}
+              onValueChange={(v) => v && set('type', v as ExerciseType)}
+              className={`grid w-full ${GRID_COLS[Math.min(types.length, 4) as 1 | 2 | 3 | 4]}`}
+              spacing={2}
+              aria-label="Exercise type"
             >
-              <SelectTrigger id="exercise-muscle" className="w-full data-[size=default]:h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MUSCLE_GROUPS.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {MUSCLE_GROUP_LABELS[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="exercise-equipment">Equipment</Label>
-            <Select value={draft.equipment} onValueChange={(v) => set('equipment', v as Equipment)}>
-              <SelectTrigger id="exercise-equipment" className="w-full data-[size=default]:h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {EQUIPMENT.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {EQUIPMENT_LABELS[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="exercise-rest">Default rest</Label>
-          <Select
-            value={draft.defaultRestSeconds === null ? 'default' : String(draft.defaultRestSeconds)}
-            onValueChange={(v) => set('defaultRestSeconds', v === 'default' ? null : Number(v))}
-          >
-            <SelectTrigger id="exercise-rest" className="w-full data-[size=default]:h-12">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Use my default</SelectItem>
-              {REST_OPTIONS.map((s) => (
-                <SelectItem key={s} value={String(s)}>
-                  {formatDuration(s)}
-                </SelectItem>
+              {types.map((t) => (
+                <ToggleGroupItem
+                  key={t}
+                  value={t}
+                  className="h-12 bg-surface-2 data-[state=on]:bg-brand-dim data-[state=on]:text-brand"
+                >
+                  {EXERCISE_TYPE_LABELS[t]}
+                </ToggleGroupItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+            </ToggleGroup>
+          </div>
+        )}
+        {draft.type !== 'sport' && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="exercise-muscle">Muscle group</Label>
+                <Select
+                  value={draft.muscleGroup}
+                  onValueChange={(v) => set('muscleGroup', v as MuscleGroup)}
+                >
+                  <SelectTrigger id="exercise-muscle" className="w-full data-[size=default]:h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MUSCLE_GROUPS.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {MUSCLE_GROUP_LABELS[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="exercise-equipment">Equipment</Label>
+                <Select
+                  value={draft.equipment}
+                  onValueChange={(v) => set('equipment', v as Equipment)}
+                >
+                  <SelectTrigger
+                    id="exercise-equipment"
+                    className="w-full data-[size=default]:h-12"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EQUIPMENT.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {EQUIPMENT_LABELS[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="exercise-rest">Default rest</Label>
+              <Select
+                value={
+                  draft.defaultRestSeconds === null ? 'default' : String(draft.defaultRestSeconds)
+                }
+                onValueChange={(v) => set('defaultRestSeconds', v === 'default' ? null : Number(v))}
+              >
+                <SelectTrigger id="exercise-rest" className="w-full data-[size=default]:h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Use my default</SelectItem>
+                  {REST_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={String(s)}>
+                      {formatDuration(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
         <Button type="submit" size="lg" disabled={pending || !draft.name.trim()}>
-          {exercise ? 'Save' : 'Create exercise'}
+          {exercise ? 'Save' : draft.type === 'sport' ? 'Create sport' : 'Create exercise'}
         </Button>
       </form>
     </BottomSheet>

@@ -25,6 +25,8 @@ export type SessionSummary = {
   volumeKg: number
   /** Exercises with at least one completed set. */
   exercises: number
+  /** A sport session (time only): every exercise in it is a sport. */
+  sport: boolean
   prs: ExercisePR[]
 }
 
@@ -128,6 +130,8 @@ export function buildTraining(rows: TrainingRows): Training {
         exercises: ses.filter((se) =>
           (setsBySe.get(se.id) ?? []).some((s) => s.completedAt !== null),
         ).length,
+        sport:
+          ses.length > 0 && ses.every((se) => exerciseById.get(se.exerciseId)?.type === 'sport'),
         prs: prsBySession.get(session.id) ?? [],
       }
     })
@@ -158,9 +162,15 @@ export type Stats = {
   volumeKg: number
   volumeMonthKg: number
   totalSets: number
+  /** Minutes of sport this week / this month (sports are not counted as workouts). */
+  activeMinutesWeek: number
+  activeMinutesMonth: number
 }
 
-/** Progress tab tiles (weeks start on Sunday, see `WEEK_STARTS_ON`; days are session `localDate`s). */
+/**
+ * Progress tab tiles (weeks start on Sunday, see `WEEK_STARTS_ON`; days are session
+ * `localDate`s). Sport sessions don't count as workouts; their time is "active minutes".
+ */
 export function computeStats(training: Training, today: Date): Stats {
   const week = dayKey(startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }))
   const month = dayKey(startOfMonth(today))
@@ -168,14 +178,24 @@ export function computeStats(training: Training, today: Date): Stats {
   const end = dayKey(today)
   const inRange = (from: string) =>
     training.sessions.filter((s) => s.session.localDate >= from && s.session.localDate <= end)
+  const workouts = (from: string) => inRange(from).filter((s) => !s.sport)
+  const minutes = (from: string) =>
+    Math.round(
+      inRange(from)
+        .filter((s) => s.sport)
+        .reduce((ms, s) => ms + s.durationMs, 0) / 60_000,
+    )
+  const lifting = training.sessions.filter((s) => !s.sport)
   return {
-    week: inRange(week).length,
-    month: inRange(month).length,
-    year: inRange(year).length,
-    total: training.sessions.length,
-    volumeKg: training.sessions.reduce((v, s) => v + s.volumeKg, 0),
-    volumeMonthKg: inRange(month).reduce((v, s) => v + s.volumeKg, 0),
-    totalSets: training.sessions.reduce((v, s) => v + s.sets, 0),
+    week: workouts(week).length,
+    month: workouts(month).length,
+    year: workouts(year).length,
+    total: lifting.length,
+    volumeKg: lifting.reduce((v, s) => v + s.volumeKg, 0),
+    volumeMonthKg: workouts(month).reduce((v, s) => v + s.volumeKg, 0),
+    totalSets: lifting.reduce((v, s) => v + s.sets, 0),
+    activeMinutesWeek: minutes(week),
+    activeMinutesMonth: minutes(month),
   }
 }
 

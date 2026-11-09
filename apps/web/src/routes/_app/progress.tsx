@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DaySheet } from '@/features/progress/components/day-sheet'
 import { MonthCalendar } from '@/features/progress/components/month-calendar'
 import { YearGrid } from '@/features/progress/components/year-grid'
-import { useTraining } from '@/features/progress/use-training'
+import { formatSpan, useTraining } from '@/features/progress/use-training'
 import { useUnit } from '@/features/settings/use-settings'
 import { formatPR } from '@/features/workout/format-pr'
 import { computeStats } from '@/lib/training'
@@ -38,6 +38,17 @@ function ProgressPage() {
         <StatTile label="This year" value={String(stats.year)} />
         <StatTile label="Total workouts" value={String(stats.total)} />
       </div>
+
+      {/* Sports aren't workouts: their time shows here instead (only once you've logged one). */}
+      {training.sessions.some((s) => s.sport) && (
+        <section className="flex flex-col gap-2">
+          <SectionLabel>Active minutes</SectionLabel>
+          <div className="grid grid-cols-2 gap-2">
+            <StatTile label="This week" value={formatSpan(stats.activeMinutesWeek * 60_000)} />
+            <StatTile label="This month" value={formatSpan(stats.activeMinutesMonth * 60_000)} />
+          </div>
+        </section>
+      )}
 
       <section
         className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"

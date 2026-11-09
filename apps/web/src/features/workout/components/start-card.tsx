@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { Play } from 'lucide-react'
+import { Activity, Play } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { SportPicker } from '@/features/exercises/components/sport-picker'
 import { useNow } from '@/lib/use-now'
 import { formatElapsed } from '@/lib/workout'
 import { useStartWorkout } from '../use-start-workout'
@@ -10,7 +12,8 @@ import { useActiveSession } from '../use-workout'
 export function StartCard() {
   const active = useActiveSession()
   const now = useNow(1000, !!active)
-  const { startEmpty } = useStartWorkout()
+  const { startEmpty, startSport } = useStartWorkout()
+  const [pickingSport, setPickingSport] = useState(false)
   if (active === undefined) return null
   if (active) {
     return (
@@ -23,8 +26,18 @@ export function StartCard() {
     )
   }
   return (
-    <Button size="lg" onClick={() => void startEmpty()}>
-      <Play /> Start empty workout
-    </Button>
+    <div className="flex flex-col gap-2">
+      <Button size="lg" onClick={() => void startEmpty()}>
+        <Play /> Start empty workout
+      </Button>
+      <Button size="lg" variant="secondary" onClick={() => setPickingSport(true)}>
+        <Activity /> Start a sport
+      </Button>
+      <SportPicker
+        open={pickingSport}
+        onOpenChange={setPickingSport}
+        onPick={(sport) => void startSport(sport.id)}
+      />
+    </div>
   )
 }

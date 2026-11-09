@@ -37,8 +37,8 @@ export function WeekStrip({ trained, today = new Date() }: { trained: Set<string
       </ol>
       <p className="text-sm text-muted-foreground mt-3.5">
         {count === 0
-          ? 'No workouts yet this week'
-          : `${count} ${count === 1 ? 'workout' : 'workouts'} this week`}
+          ? 'No active days yet this week'
+          : `${count} active ${count === 1 ? 'day' : 'days'} this week`}
       </p>
     </div>
   )

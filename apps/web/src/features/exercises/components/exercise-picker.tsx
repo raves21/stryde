@@ -1,6 +1,7 @@
 import type { ExerciseRow } from '@stryde/shared'
 import { useState } from 'react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
+import { GYM_TYPES } from '../labels'
 import { ExerciseBrowser } from './exercise-browser'
 import { ExerciseFormSheet } from './exercise-form-sheet'
 
@@ -37,9 +38,15 @@ export function ExercisePicker({
           showRecent
           stickyTop="top-0"
           onCreate={() => setCreating(true)}
+          types={GYM_TYPES}
         />
       </BottomSheet>
-      <ExerciseFormSheet open={creating} onOpenChange={setCreating} onSaved={pick} />
+      <ExerciseFormSheet
+        open={creating}
+        onOpenChange={setCreating}
+        onSaved={pick}
+        types={GYM_TYPES}
+      />
     </>
   )
 }

@@ -1,11 +1,13 @@
-import { ChevronRight, Play } from 'lucide-react'
+import { Activity, ChevronRight, Play } from 'lucide-react'
+import { useState } from 'react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
 import { SectionLabel } from '@/components/app/section-label'
 import { Button } from '@/components/ui/button'
+import { SportPicker } from '@/features/exercises/components/sport-picker'
 import { exercisePreview, useTemplateSummaries } from '@/features/templates/use-templates'
 import { useStartWorkout } from '../use-start-workout'
 
-/** Center button sheet: start empty or from a template. */
+/** Center button sheet: start empty, from a template, or a sport. */
 export function StartSheet({
   open,
   onOpenChange,
@@ -14,48 +16,62 @@ export function StartSheet({
   onOpenChange: (open: boolean) => void
 }) {
   const templates = useTemplateSummaries()
-  const { startEmpty, startTemplate } = useStartWorkout()
+  const { startEmpty, startTemplate, startSport } = useStartWorkout()
+  const [pickingSport, setPickingSport] = useState(false)
 
   return (
-    <BottomSheet open={open} onOpenChange={onOpenChange} title="Start workout">
-      <div className="flex flex-col gap-5">
-        <Button
-          size="lg"
-          onClick={() => {
-            onOpenChange(false)
-            void startEmpty()
-          }}
-        >
-          <Play /> Start empty workout
-        </Button>
-        {templates && templates.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <SectionLabel>From a template</SectionLabel>
-            <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
-              {templates.map((t) => (
-                <li key={t.id} className="border-border not-last:border-b">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenChange(false)
-                      void startTemplate(t.id)
-                    }}
-                    className="flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2"
-                  >
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate font-medium">{t.name}</span>
-                      <span className="truncate text-sm text-muted-foreground">
-                        {exercisePreview(t.exerciseNames)}
+    <>
+      <BottomSheet open={open} onOpenChange={onOpenChange} title="Start workout">
+        <div className="flex flex-col gap-5">
+          <Button
+            size="lg"
+            onClick={() => {
+              onOpenChange(false)
+              void startEmpty()
+            }}
+          >
+            <Play /> Start empty workout
+          </Button>
+          <Button size="lg" variant="secondary" onClick={() => setPickingSport(true)}>
+            <Activity /> Start a sport
+          </Button>
+          {templates && templates.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <SectionLabel>From a template</SectionLabel>
+              <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+                {templates.map((t) => (
+                  <li key={t.id} className="border-border not-last:border-b">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenChange(false)
+                        void startTemplate(t.id)
+                      }}
+                      className="flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2"
+                    >
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-medium">{t.name}</span>
+                        <span className="truncate text-sm text-muted-foreground">
+                          {exercisePreview(t.exerciseNames)}
+                        </span>
                       </span>
-                    </span>
-                    <ChevronRight className="size-5 text-faint" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>
-    </BottomSheet>
+                      <ChevronRight className="size-5 text-faint" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      </BottomSheet>
+      <SportPicker
+        open={pickingSport}
+        onOpenChange={setPickingSport}
+        onPick={(sport) => {
+          onOpenChange(false)
+          void startSport(sport.id)
+        }}
+      />
+    </>
   )
 }

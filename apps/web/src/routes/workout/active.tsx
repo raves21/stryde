@@ -10,9 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import type { SessionTree } from '@/db/repositories/sessions'
 import { deleteSession, finishWorkout, updateSession } from '@/db/repositories/sessions'
 import { SyncIndicator } from '@/features/sync/components/sync-indicator'
+import { ActiveSport } from '@/features/workout/components/active-sport'
 import { FinishSheet } from '@/features/workout/components/finish-sheet'
 import { RestTimerBar } from '@/features/workout/components/rest-timer-bar'
 import { WorkoutBody } from '@/features/workout/components/workout-body'
+import { isSportTree } from '@/features/workout/is-sport'
 import { clearRestTimer } from '@/features/workout/rest-timer'
 import { useActiveSession, useKeepScreenOn, useSessionTree } from '@/features/workout/use-workout'
 import { useWorkoutActions } from '@/features/workout/use-workout-actions'
@@ -36,7 +38,8 @@ function ActiveWorkoutPage() {
   }, [active, navigate])
 
   if (!active || !tree) return null
-  return <ActiveWorkout tree={tree} />
+  // A sport has its own screen: a timer and notes, no sets.
+  return isSportTree(tree) ? <ActiveSport tree={tree} /> : <ActiveWorkout tree={tree} />
 }
 
 function ActiveWorkout({ tree }: { tree: SessionTree }) {

@@ -106,14 +106,22 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <StatTile label="Duration" value={formatSpan(summary?.durationMs ?? 0)} />
-        <StatTile label="Sets" value={String(summary?.sets ?? 0)} />
-        <StatTile
-          label={`Volume (${unit})`}
-          value={toDisplayWeight(summary?.volumeKg ?? 0, unit, 0).toLocaleString()}
-        />
-      </div>
+      {summary?.sport ? (
+        // A sport is just its time (and notes below): no sets or volume.
+        <div className="grid grid-cols-2 gap-2">
+          <StatTile label="Duration" value={formatSpan(summary.durationMs)} />
+          <StatTile label="Sport" value={session.name} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <StatTile label="Duration" value={formatSpan(summary?.durationMs ?? 0)} />
+          <StatTile label="Sets" value={String(summary?.sets ?? 0)} />
+          <StatTile
+            label={`Volume (${unit})`}
+            value={toDisplayWeight(summary?.volumeKg ?? 0, unit, 0).toLocaleString()}
+          />
+        </div>
+      )}
 
       {summary && summary.prs.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -135,43 +143,44 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
       )}
 
       <section className="flex flex-col gap-3">
-        {tree.exercises.map(({ row, exercise, sets }) => {
-          const done = sets.filter((s) => s.completedAt !== null)
-          const prSetIds = new Set(
-            done.filter((s) => (training.prsBySet.get(s.id) ?? []).length > 0).map((s) => s.id),
-          )
-          return (
-            <article
-              key={row.id}
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
-            >
-              <header className="flex items-center gap-2">
-                {row.supersetGroup && (
-                  <span className="rounded-full bg-brand-dim px-2 font-display text-sm font-bold text-brand">
-                    {row.supersetGroup}
-                  </span>
-                )}
-                {exercise ? (
-                  <Link
-                    to="/exercises/$id"
-                    params={{ id: exercise.id }}
-                    className="truncate font-semibold hover:underline"
-                  >
-                    {exercise.name}
-                  </Link>
-                ) : (
-                  <span className="font-semibold">Unknown exercise</span>
-                )}
-              </header>
-              <SetTable
-                sets={done}
-                type={exercise?.type ?? 'weighted'}
-                unit={unit}
-                prSetIds={prSetIds}
-              />
-            </article>
-          )
-        })}
+        {!summary?.sport &&
+          tree.exercises.map(({ row, exercise, sets }) => {
+            const done = sets.filter((s) => s.completedAt !== null)
+            const prSetIds = new Set(
+              done.filter((s) => (training.prsBySet.get(s.id) ?? []).length > 0).map((s) => s.id),
+            )
+            return (
+              <article
+                key={row.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
+              >
+                <header className="flex items-center gap-2">
+                  {row.supersetGroup && (
+                    <span className="rounded-full bg-brand-dim px-2 font-display text-sm font-bold text-brand">
+                      {row.supersetGroup}
+                    </span>
+                  )}
+                  {exercise ? (
+                    <Link
+                      to="/exercises/$id"
+                      params={{ id: exercise.id }}
+                      className="truncate font-semibold hover:underline"
+                    >
+                      {exercise.name}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold">Unknown exercise</span>
+                  )}
+                </header>
+                <SetTable
+                  sets={done}
+                  type={exercise?.type ?? 'weighted'}
+                  unit={unit}
+                  prSetIds={prSetIds}
+                />
+              </article>
+            )
+          })}
       </section>
 
       {session.notes && (

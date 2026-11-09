@@ -111,8 +111,9 @@ function ExerciseDetail({
       <TopBar title={exercise.name} back />
       <div className="-mt-4 flex flex-wrap items-center gap-2 text-muted-foreground">
         <span>
-          {EQUIPMENT_LABELS[exercise.equipment]} · {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} ·{' '}
-          {EXERCISE_TYPE_LABELS[exercise.type]}
+          {exercise.type === 'sport'
+            ? EXERCISE_TYPE_LABELS.sport
+            : `${EQUIPMENT_LABELS[exercise.equipment]} · ${MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · ${EXERCISE_TYPE_LABELS[exercise.type]}`}
         </span>
         {!exercise.isPreset && (
           <Badge variant="secondary" className="bg-surface-3 text-muted-foreground">

@@ -1,4 +1,9 @@
-import { type ExerciseRow, MUSCLE_GROUPS, type MuscleGroup } from '@stryde/shared'
+import {
+  type ExerciseRow,
+  type ExerciseType,
+  MUSCLE_GROUPS,
+  type MuscleGroup,
+} from '@stryde/shared'
 import { ChevronRight, Plus, Search, SearchX } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/app/empty-state'
@@ -18,6 +23,9 @@ export function ExerciseBrowser({
   onSelect,
   showRecent = false,
   onCreate,
+  createLabel = 'Create custom exercise',
+  types,
+  muscleChips = true,
   footer,
   stickyTop = 'top-14',
 }: {
@@ -25,11 +33,20 @@ export function ExerciseBrowser({
   showRecent?: boolean
   /** Shows "Create custom exercise" right under the filters, and when nothing matches. */
   onCreate?: () => void
+  createLabel?: string
+  /** Only these exercise types (default: all). */
+  types?: readonly ExerciseType[]
+  /** The muscle group chips under the search (a short list like sports doesn't need them). */
+  muscleChips?: boolean
   footer?: ReactNode
   /** Offset of the sticky search bar (below the page's top bar). */
   stickyTop?: string
 }) {
-  const exercises = useExercises()
+  const all = useExercises()
+  const exercises = useMemo(
+    () => (types ? all?.filter((e) => types.includes(e.type)) : all),
+    [all, types],
+  )
   const recentIds = useRecentExerciseIds()
   const [query, setQuery] = useState('')
   const [muscle, setMuscle] = useState<MuscleGroup | 'all'>('all')
@@ -66,27 +83,29 @@ export function ExerciseBrowser({
             className="pl-10 mt-4"
           />
         </div>
-        <ToggleGroup
-          type="single"
-          value={muscle}
-          onValueChange={(v) => setMuscle((v || 'all') as MuscleGroup | 'all')}
-          className="-mx-4 w-auto justify-start overflow-x-auto px-4 [scrollbar-width:none]"
-          spacing={2}
-          aria-label="Filter by muscle group"
-        >
-          {(['all', ...MUSCLE_GROUPS] as const).map((m) => (
-            <ToggleGroupItem
-              key={m}
-              value={m}
-              className="h-9 shrink-0 rounded-full bg-surface-3 px-4 text-muted-foreground data-[state=on]:bg-brand data-[state=on]:text-primary-foreground"
-            >
-              {m === 'all' ? 'All' : MUSCLE_GROUP_LABELS[m]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        {muscleChips && (
+          <ToggleGroup
+            type="single"
+            value={muscle}
+            onValueChange={(v) => setMuscle((v || 'all') as MuscleGroup | 'all')}
+            className="-mx-4 w-auto justify-start overflow-x-auto px-4 [scrollbar-width:none]"
+            spacing={2}
+            aria-label="Filter by muscle group"
+          >
+            {(['all', ...MUSCLE_GROUPS] as const).map((m) => (
+              <ToggleGroupItem
+                key={m}
+                value={m}
+                className="h-9 shrink-0 rounded-full bg-surface-3 px-4 text-muted-foreground data-[state=on]:bg-brand data-[state=on]:text-primary-foreground"
+              >
+                {m === 'all' ? 'All' : MUSCLE_GROUP_LABELS[m]}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        )}
       </div>
 
-      {onCreate && <CreateCustomButton onClick={onCreate} />}
+      {onCreate && <CreateCustomButton onClick={onCreate} label={createLabel} />}
 
       {recent.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -112,7 +131,7 @@ export function ExerciseBrowser({
 }
 
 /** Right below the filters so it is seen without scrolling (UI_DESIGN.md §5.9). */
-function CreateCustomButton({ onClick }: { onClick: () => void }) {
+function CreateCustomButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <Button
       variant="outline"
@@ -120,7 +139,7 @@ function CreateCustomButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="justify-start gap-3 border-dashed border-brand/60 bg-brand-dim text-brand hover:bg-brand-dim hover:text-brand"
     >
-      <Plus className="size-5" /> Create custom exercise
+      <Plus className="size-5" /> {label}
     </Button>
   )
 }
@@ -154,7 +173,9 @@ function ExerciseList({
                 )}
               </span>
               <span className="text-sm text-muted-foreground">
-                {EQUIPMENT_LABELS[e.equipment]} · {MUSCLE_GROUP_LABELS[e.muscleGroup]}
+                {e.type === 'sport'
+                  ? 'Sport'
+                  : `${EQUIPMENT_LABELS[e.equipment]} · ${MUSCLE_GROUP_LABELS[e.muscleGroup]}`}
               </span>
             </span>
             <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />

@@ -41,14 +41,23 @@ export function FeedCard({ item }: { item: FeedItem }) {
             <span className="flex items-center gap-1">
               <Timer className="size-4" aria-hidden /> {formatSpan(item.durationSec * 1000)}
             </span>
-            <span aria-hidden>·</span>
-            <span>
-              {item.exerciseCount} {item.exerciseCount === 1 ? 'exercise' : 'exercises'}
-            </span>
-            <span aria-hidden>·</span>
-            <span>
-              {item.setCount} {item.setCount === 1 ? 'set' : 'sets'}
-            </span>
+            {item.sport ? (
+              <>
+                <span aria-hidden>·</span>
+                <span>Sport</span>
+              </>
+            ) : (
+              <>
+                <span aria-hidden>·</span>
+                <span>
+                  {item.exerciseCount} {item.exerciseCount === 1 ? 'exercise' : 'exercises'}
+                </span>
+                <span aria-hidden>·</span>
+                <span>
+                  {item.setCount} {item.setCount === 1 ? 'set' : 'sets'}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </Link>

@@ -1,6 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { startEmptySession, startSessionFromTemplate } from '@/db/repositories/sessions'
+import {
+  startEmptySession,
+  startSessionFromTemplate,
+  startSportSession,
+} from '@/db/repositories/sessions'
 
 /** Start a workout and open it. */
 export function useStartWorkout() {
@@ -16,5 +20,6 @@ export function useStartWorkout() {
   return {
     startEmpty: () => go(() => startEmptySession()),
     startTemplate: (templateId: string) => go(() => startSessionFromTemplate(templateId)),
+    startSport: (exerciseId: string) => go(() => startSportSession(exerciseId)),
   }
 }

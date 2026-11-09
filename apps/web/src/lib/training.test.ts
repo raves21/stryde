@@ -17,7 +17,61 @@ const bench: ExerciseRow = {
   isPreset: true,
 }
 
+const pickleball: ExerciseRow = {
+  ...bench,
+  id: 'pickleball',
+  name: 'Pickleball',
+  type: 'sport',
+  muscleGroup: 'cardio',
+  equipment: 'other',
+}
+
 let n = 0
+
+/** A finished sport session of `minutes` on `localDate`: one sport exercise, one timed set. */
+function sport(localDate: string, minutes: number) {
+  n += 1
+  const start = `${localDate}T18:00:00.000Z`
+  const session: SessionRow = {
+    ...base,
+    id: `sport${n}`,
+    templateId: null,
+    name: 'Pickleball',
+    startedAt: start,
+    finishedAt: new Date(Date.parse(start) + minutes * 60_000).toISOString(),
+    timezone: 'UTC',
+    localDate,
+    notes: null,
+    shareWithFriends: true,
+  }
+  const se: SessionExerciseRow = {
+    ...base,
+    id: `sportse${n}`,
+    sessionId: session.id,
+    exerciseId: 'pickleball',
+    position: 0,
+    supersetGroup: null,
+    restSeconds: null,
+  }
+  const set: SetRow = {
+    ...base,
+    id: `sportset${n}`,
+    sessionExerciseId: se.id,
+    position: 0,
+    setType: 'working',
+    targetKind: 'fixed',
+    targetReps: null,
+    targetRepsMax: null,
+    targetRir: null,
+    weightKg: null,
+    reps: null,
+    rir: null,
+    durationSec: minutes * 60,
+    completedAt: session.finishedAt,
+  }
+  return { session, se, sets: [set] }
+}
+
 function workout(
   localDate: string,
   weightKg: number,
@@ -80,7 +134,7 @@ function build(...ws: ReturnType<typeof workout>[]) {
     sessions: ws.map((w) => w.session),
     sessionExercises: ws.map((w) => w.se),
     sets: ws.flatMap((w) => w.sets),
-    exercises: [bench],
+    exercises: [bench, pickleball],
   })
 }
 
@@ -160,5 +214,47 @@ describe('computeStats', () => {
     ])
     // A Sunday starts its own week.
     expect(weekDays(new Date(2026, 10, 1))[0]).toBe('2026-11-01')
+  })
+})
+
+describe('sport sessions in the training summary', () => {
+  const lift = workout('2026-10-27', 100, 5)
+  const p1 = sport('2026-10-26', 90) // Monday of the week of Sun 25 Oct
+  const p2 = sport('2026-10-12', 60)
+  const t = build(lift, p1, p2)
+
+  it('flags them, with their duration, and gives them no PRs or volume', () => {
+    expect(t.byId.get(p1.session.id)).toMatchObject({
+      sport: true,
+      durationMs: 90 * 60_000,
+      volumeKg: 0,
+      prs: [],
+    })
+    expect(t.byId.get(lift.session.id)?.sport).toBe(false)
+    expect(t.exercises.get('pickleball')?.events).toEqual([])
+  })
+
+  it('still marks their days as trained (calendar, week strip)', () => {
+    expect([...t.trainedDates].sort()).toEqual(['2026-10-12', '2026-10-26', '2026-10-27'])
+  })
+
+  it('computeStats: not workouts, but active minutes', () => {
+    const s = computeStats(t, new Date(2026, 9, 28)) // Wednesday; week starts Sun 25 Oct
+    expect({ week: s.week, month: s.month, year: s.year, total: s.total }).toEqual({
+      week: 1,
+      month: 1,
+      year: 1,
+      total: 1,
+    })
+    expect(s.volumeKg).toBe(500)
+    expect(s.totalSets).toBe(1)
+    expect(s.activeMinutesWeek).toBe(90)
+    expect(s.activeMinutesMonth).toBe(150)
+  })
+
+  it('computeStats: a week with only sport has zero workouts and some minutes', () => {
+    const s = computeStats(build(p1), new Date(2026, 9, 28))
+    expect(s.week).toBe(0)
+    expect(s.activeMinutesWeek).toBe(90)
   })
 })
