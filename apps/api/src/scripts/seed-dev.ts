@@ -48,8 +48,8 @@ type Workout = {
   agoMin: number
   durationMin: number
   lifts: Lift[]
-  /** A sport session (time only) instead of lifts. */
-  sport?: { exercise: string; minutes: number }
+  /** A sport session (games, minutes each) instead of lifts. */
+  sport?: { exercise: string; games: number[] }
   reactions?: [by: string, emoji: 'muscle' | 'fire' | 'clap' | 'trophy' | 'grimace'][]
 }
 
@@ -67,16 +67,17 @@ const play = (
   owner: string,
   sport: string,
   agoMin: number,
-  minutes: number,
+  games: number[],
   reactions?: Workout['reactions'],
 ): Workout => ({
   key,
   owner,
   name: sport,
   agoMin,
-  durationMin: minutes,
+  // 10 minutes between games.
+  durationMin: games.reduce((a, b) => a + b, 0) + 10 * (games.length - 1),
   lifts: [],
-  sport: { exercise: sport, minutes },
+  sport: { exercise: sport, games },
   reactions,
 })
 const d = (days: number) => days * 24 * 60
@@ -528,17 +529,38 @@ const WORKOUTS: Workout[] = [
     [['sam_ok', 'trophy']],
   ),
 
-  // Sports (time only): no PRs, shown as "Sport" and counted as active minutes.
-  play('aiko-pickleball', 'aiko_t', 'Pickleball', 3 * d(1) + 20, 75, [
-    ['sam_ok', 'fire'],
-    ['demo', 'muscle'],
-  ]),
-  play('sam-basketball', 'sam_ok', 'Basketball', d(1) + 60, 60, [['marco_r', 'clap']]),
-  play('demo-tennis', 'demo', 'Tennis', 2 * d(1) + 30, 90, [
-    ['lena_f', 'fire'],
-    ['diego_s', 'clap'],
-  ]),
-  play('demo-pickleball', 'demo', 'Pickleball', 5 * d(1) + 45, 60),
+  // Sports (games on a clock): no PRs; analysed apart from the gym.
+  play(
+    'aiko-pickleball',
+    'aiko_t',
+    'Pickleball',
+    3 * d(1) + 20,
+    [25, 20, 30],
+    [
+      ['sam_ok', 'fire'],
+      ['demo', 'muscle'],
+    ],
+  ),
+  play(
+    'sam-basketball',
+    'sam_ok',
+    'Basketball',
+    d(1) + 60,
+    [15, 15, 15, 15],
+    [['marco_r', 'clap']],
+  ),
+  play(
+    'demo-tennis',
+    'demo',
+    'Tennis',
+    2 * d(1) + 30,
+    [45, 45],
+    [
+      ['lena_f', 'fire'],
+      ['diego_s', 'clap'],
+    ],
+  ),
+  play('demo-pickleball', 'demo', 'Pickleball', 5 * d(1) + 45, [20, 25, 15]),
 ]
 
 const exerciseId = (name: string) => {
@@ -607,7 +629,7 @@ function rows(userId: string, wo: Workout, now: number) {
     },
   ]
   if (wo.sport) {
-    // A sport: one sport exercise with one set that holds the time.
+    // A sport: one sport exercise, one completed set per game (its time in durationSec).
     const seId = id(`${wo.key}:ex:0`)
     out.push({
       table: 'sessionExercises',
@@ -621,25 +643,30 @@ function rows(userId: string, wo: Workout, now: number) {
         restSeconds: null,
       },
     })
-    out.push({
-      table: 'sets',
-      row: {
-        ...stamp,
-        id: id(`${wo.key}:ex:0:set:0`),
-        sessionExerciseId: seId,
-        position: 0,
-        setType: 'working',
-        targetKind: 'fixed',
-        targetReps: null,
-        targetRepsMax: null,
-        targetRir: null,
-        weightKg: null,
-        reps: null,
-        rir: null,
-        durationSec: wo.sport.minutes * 60,
-        completedAt: iso(startedAt + wo.sport.minutes * MIN),
-      },
-    })
+    let at = startedAt
+    for (const [g, minutes] of wo.sport.games.entries()) {
+      at += minutes * MIN
+      out.push({
+        table: 'sets',
+        row: {
+          ...stamp,
+          id: id(`${wo.key}:ex:0:set:${g}`),
+          sessionExerciseId: seId,
+          position: g,
+          setType: 'working',
+          targetKind: 'fixed',
+          targetReps: null,
+          targetRepsMax: null,
+          targetRir: null,
+          weightKg: null,
+          reps: null,
+          rir: null,
+          durationSec: minutes * 60,
+          completedAt: iso(at),
+        },
+      })
+      at += 10 * MIN
+    }
   }
   for (const [i, lift] of wo.lifts.entries()) {
     const seId = id(`${wo.key}:ex:${i}`)

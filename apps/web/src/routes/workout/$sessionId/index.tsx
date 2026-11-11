@@ -25,6 +25,7 @@ import { FriendSessionPage } from '@/features/social/components/friend-session-p
 import { formatPR } from '@/features/workout/format-pr'
 import { useSessionTree } from '@/features/workout/use-workout'
 import type { Training } from '@/lib/training'
+import { formatElapsed } from '@/lib/workout'
 
 export const Route = createFileRoute('/workout/$sessionId/')({
   component: SessionDetailPage,
@@ -107,10 +108,10 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
       </div>
 
       {summary?.sport ? (
-        // A sport is just its time (and notes below): no sets or volume.
+        // A sport is its games (and notes below): no sets, volume or records.
         <div className="grid grid-cols-2 gap-2">
-          <StatTile label="Duration" value={formatSpan(summary.durationMs)} />
-          <StatTile label="Sport" value={session.name} />
+          <StatTile label="Time played" value={formatSpan(summary.durationMs)} />
+          <StatTile label="Games" value={String(summary.sets)} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
@@ -139,6 +140,28 @@ function SessionDetail({ tree, training }: { tree: SessionTree; training: Traini
               </p>
             </div>
           ))}
+        </section>
+      )}
+
+      {summary?.sport && (
+        <section className="flex flex-col gap-2">
+          <SectionLabel>Games</SectionLabel>
+          <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+            {tree.exercises
+              .flatMap((e) => e.sets)
+              .filter((s) => s.completedAt !== null)
+              .map((g, i) => (
+                <li
+                  key={g.id}
+                  className="flex items-center justify-between border-border px-4 py-3 not-last:border-b"
+                >
+                  <span className="font-medium">Game {i + 1}</span>
+                  <span className="tnum text-muted-foreground">
+                    {formatElapsed((g.durationSec ?? 0) * 1000)}
+                  </span>
+                </li>
+              ))}
+          </ul>
         </section>
       )}
 

@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test'
 import { signUp } from './helpers'
 
-// Sports (pickleball, tennis…): started from Today or the center button, timed, finished
-// with the minutes (editable) and notes, shown as time only, counted as active minutes.
+// Sports (pickleball, tennis…): started from Today or the center button, played as games on a
+// pausable clock from 0:00, analysed apart from the gym (Sports tabs), shown in the calendar.
 
-test('start a sport, finish it, and see it as time: history, progress, feed', async ({ page }) => {
+test('play two games with pause and resume, then see the sport apart from the gym', async ({
+  page,
+}) => {
   await signUp(page)
 
   await page.getByRole('button', { name: 'Start a sport' }).click()
@@ -15,46 +17,72 @@ test('start a sport, finish it, and see it as time: history, progress, feed', as
   }
   await picker.getByRole('button', { name: /^Pickleball/ }).click()
 
-  // The sport screen: a timer and notes, no sets.
+  // Game 1 is already running from 0:00; there are no sets.
   await expect(page.getByRole('heading', { name: 'Pickleball' })).toBeVisible()
-  await expect(page.getByRole('timer', { name: 'Time played' })).toBeVisible()
+  const timer = page.getByRole('timer', { name: 'Game 1 time' })
   await expect(page.getByRole('button', { name: 'Add set' })).toHaveCount(0)
-  await page.getByLabel('Notes').fill('Doubles, won 2 of 3')
+  await expect(timer).not.toHaveText('0:00')
 
-  // Finish with the minutes from the timer, edited to 75.
-  await page.getByRole('button', { name: 'Finish', exact: true }).click()
+  // Pause stops the clock; Resume continues it.
+  await page.getByRole('button', { name: 'Pause' }).click()
+  await expect(page.getByText('Game 1 · Paused')).toBeVisible()
+  const frozen = await timer.textContent()
+  await page.waitForTimeout(1500)
+  await expect(timer).toHaveText(frozen ?? '')
+  await page.getByRole('button', { name: 'Resume' }).click()
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
+
+  // Finishing the game saves it and leaves game 2 waiting at 0:00.
+  await page.getByRole('button', { name: 'Finish game 1' }).click()
+  await expect(page.getByRole('button', { name: 'Start game 2' })).toBeVisible()
+  await expect(page.getByRole('timer', { name: 'Game 2 time' })).toHaveText('0:00')
+  await expect(page.getByRole('listitem').filter({ hasText: 'Game 1' })).toBeVisible()
+
+  // Game 2 starts from 0:00 as well.
+  await page.getByRole('button', { name: 'Start game 2' }).click()
+  await expect(page.getByRole('timer', { name: 'Game 2 time' })).not.toHaveText('0:00')
+  await page.getByLabel('Notes').fill('Doubles, won 2 of 3')
+  await page.getByRole('button', { name: 'End session' }).click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet.getByLabel('Minutes played')).toHaveValue('1')
-  await sheet.getByLabel('Minutes played').fill('75')
-  await expect(sheet.getByText('1h 15m')).toBeVisible()
+  await expect(sheet.getByText('2 games played')).toBeVisible()
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+  // A sport is not a workout: Today's recent workouts stay empty.
+  await expect(page.getByText('No workouts yet')).toBeVisible()
 
-  // History: time and "Sport", not sets.
+  // History keeps sports on their own tab.
   await page.goto('/history')
+  await expect(page.getByText('No workouts yet')).toBeVisible()
+  await page.getByRole('tab', { name: 'Sports' }).click()
   const row = page.getByRole('link', { name: /Pickleball/ })
-  await expect(row).toContainText('1h 15m · Sport')
+  await expect(row).toContainText('2 games')
 
-  // Its detail: duration and the notes, no set tables.
+  // Detail: games and notes, no set tables. Fix both games to 40 and 35 minutes.
   await row.click()
   await expect(page.getByText('Doubles, won 2 of 3')).toBeVisible()
-  await expect(page.getByText('1h 15m').first()).toBeVisible()
+  await expect(page.getByText('Game 2')).toBeVisible()
   await expect(page.getByRole('table')).toHaveCount(0)
-
-  // Progress: active minutes, and it is not a workout.
-  await page.goto('/progress')
-  await expect(page.getByText('Active minutes')).toBeVisible()
+  await page.getByRole('button', { name: 'Workout options' }).click()
+  await page.getByRole('menuitem', { name: 'Edit' }).click()
+  await page.getByLabel('Game 1 minutes').fill('40')
+  await page.getByLabel('Game 2 minutes').fill('35')
+  await page.getByRole('button', { name: 'Done' }).click()
   await expect(page.getByText('1h 15m').first()).toBeVisible()
-  await expect(page.getByText('Total workouts').locator('..')).toContainText('0')
 
-  // The feed card shows the time and "Sport" (own sessions appear after syncing).
+  // Progress: the sport has its own tab; the gym tab doesn't count it.
+  await page.goto('/progress')
+  await expect(page.getByText('Total workouts').locator('..')).toContainText('0')
+  await page.getByRole('tab', { name: 'Sports' }).click()
+  await expect(page.getByText('Played this week').locator('..')).toContainText('1h 15m')
+  await expect(page.getByText('By sport')).toBeVisible()
+
+  // The feed card shows the time played and the games (own sessions appear after syncing).
   await expect(page.getByRole('button', { name: 'Synced' })).toBeVisible({ timeout: 20_000 })
   await page.goto('/feed')
   const card = page.getByRole('article').filter({ hasText: 'Pickleball' })
   await expect(card).toContainText('1h 15m')
-  await expect(card).toContainText('Sport')
+  await expect(card).toContainText('2 games')
   await expect(card).not.toContainText('exercises')
-  await expect(card).not.toContainText('sets')
 })
 
 test('sports start from the center button too, can be custom, and stay out of gym workouts', async ({

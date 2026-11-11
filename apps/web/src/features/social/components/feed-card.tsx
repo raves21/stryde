@@ -44,7 +44,9 @@ export function FeedCard({ item }: { item: FeedItem }) {
             {item.sport ? (
               <>
                 <span aria-hidden>·</span>
-                <span>Sport</span>
+                <span>
+                  {item.setCount} {item.setCount === 1 ? 'game' : 'games'}
+                </span>
               </>
             ) : (
               <>

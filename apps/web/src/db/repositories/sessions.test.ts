@@ -6,6 +6,7 @@ import {
   addExerciseToSession,
   addSetToExercise,
   deleteSession,
+  finishSportGame,
   finishSportSession,
   finishWorkout,
   getActiveSession,
@@ -275,43 +276,72 @@ describe('sport sessions', () => {
     await expect(startSportSession(sport.id, db)).rejects.toThrow('already active')
   })
 
-  it('finishing sets the duration: the set is completed and the session spans exactly that long', async () => {
+  it('games: finishing one saves its time and opens the next', async () => {
     db = await signedInDb(USER)
     const sport = await pickleball(db)
     const session = await startSportSession(sport.id, db)
+    await expect(finishSportGame(session.id, 0, db)).rejects.toThrow('at least a second')
+    const { done, next } = await finishSportGame(session.id, 754, db)
+    expect(done).toMatchObject({ durationSec: 754, position: 0 })
+    expect(done.completedAt).not.toBeNull()
+    expect(next).toMatchObject({ durationSec: null, completedAt: null, position: 1 })
+    const tree = await getSessionTree(session.id, db)
+    expect(tree?.exercises[0]?.sets.map((s) => s.durationSec)).toEqual([754, null])
+  })
+
+  it('ending the session saves the game on the clock as the last one', async () => {
+    db = await signedInDb(USER)
+    const sport = await pickleball(db)
+    const session = await startSportSession(sport.id, db)
+    await finishSportGame(session.id, 600, db)
     const finished = await finishSportSession(
       session.id,
-      { durationSec: 5400, notes: 'Doubles, won 2 of 3', shareWithFriends: false },
+      { pendingSec: 300, notes: 'Doubles, won 2 of 3', shareWithFriends: false },
       db,
     )
     expect(finished.finishedAt).not.toBeNull()
-    expect(Date.parse(finished.finishedAt ?? '') - Date.parse(finished.startedAt)).toBe(5400 * 1000)
     expect(finished).toMatchObject({ notes: 'Doubles, won 2 of 3', shareWithFriends: false })
-    const tree = await getSessionTree(session.id, db)
-    expect(tree?.exercises[0]?.sets[0]).toMatchObject({ durationSec: 5400 })
-    expect(tree?.exercises[0]?.sets[0]?.completedAt).toBe(finished.finishedAt)
+    // The real start is kept; the play time is the games, not the span.
+    expect(finished.startedAt).toBe(session.startedAt)
+    const sets = (await getSessionTree(session.id, db))?.exercises[0]?.sets
+    expect(sets?.map((s) => s.durationSec)).toEqual([600, 300])
+    expect(sets?.every((s) => s.completedAt !== null)).toBe(true)
     expect(await getActiveSession(db)).toBeUndefined()
   })
 
-  it("editing a finished sport's times keeps its set in step; a gym workout is left alone", async () => {
+  it('an untouched open game is dropped when ending; no games at all is refused', async () => {
     db = await signedInDb(USER)
     const sport = await pickleball(db)
     const session = await startSportSession(sport.id, db)
+    await expect(
+      finishSportSession(session.id, { pendingSec: 0, notes: null, shareWithFriends: true }, db),
+    ).rejects.toThrow('at least one game')
+    // The refusal rolled back: the open game is still there and the session still active.
+    expect((await getSessionTree(session.id, db))?.exercises[0]?.sets).toHaveLength(1)
+    expect((await getActiveSession(db))?.id).toBe(session.id)
+
+    await finishSportGame(session.id, 600, db)
+    await finishSportSession(session.id, { pendingSec: 0, notes: null, shareWithFriends: true }, db)
+    expect((await getSessionTree(session.id, db))?.exercises[0]?.sets).toHaveLength(1)
+  })
+
+  it("editing a sport's times leaves its games alone", async () => {
+    db = await signedInDb(USER)
+    const sport = await pickleball(db)
+    const session = await startSportSession(sport.id, db)
+    await finishSportGame(session.id, 600, db)
     const done = await finishSportSession(
       session.id,
-      { durationSec: 3600, notes: null, shareWithFriends: true },
+      { pendingSec: 0, notes: null, shareWithFriends: true },
       db,
     )
     const end = done.finishedAt ?? ''
-    const start = new Date(Date.parse(end) - 2 * 3600_000).toISOString()
-    await updateSessionTimes(session.id, start, end, db)
-    expect((await getSessionTree(session.id, db))?.exercises[0]?.sets[0]?.durationSec).toBe(7200)
-
-    // A gym set keeps its own value when the session times change.
-    const lift = await bench(db)
-    const workout = await startEmptySession(db)
-    await addExerciseToSession(workout.id, lift.id, db)
-    await updateSessionTimes(workout.id, start, end, db)
-    expect((await getSessionTree(workout.id, db))?.exercises[0]?.sets[0]?.durationSec).toBeNull()
+    await updateSessionTimes(
+      session.id,
+      new Date(Date.parse(end) - 2 * 3600_000).toISOString(),
+      end,
+      db,
+    )
+    expect((await getSessionTree(session.id, db))?.exercises[0]?.sets[0]?.durationSec).toBe(600)
   })
 })

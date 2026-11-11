@@ -25,8 +25,10 @@ export type SessionSummary = {
   volumeKg: number
   /** Exercises with at least one completed set. */
   exercises: number
-  /** A sport session (time only): every exercise in it is a sport. */
+  /** A sport session (games on a clock): every exercise in it is a sport. */
   sport: boolean
+  /** The sport played (its exercise id), for a sport session. */
+  sportId: string | null
   prs: ExercisePR[]
 }
 
@@ -121,17 +123,22 @@ export function buildTraining(rows: TrainingRows): Training {
     .map((session): SessionSummary => {
       const ses = sesBySession.get(session.id) ?? []
       const sets = ses.flatMap((se) => setsBySe.get(se.id) ?? [])
+      const sport =
+        ses.length > 0 && ses.every((se) => exerciseById.get(se.exerciseId)?.type === 'sport')
       return {
         session,
-        durationMs:
-          Date.parse(session.finishedAt ?? session.startedAt) - Date.parse(session.startedAt),
+        // A sport's length is the time its games were played (pauses and breaks left out);
+        // a workout's is start to finish.
+        durationMs: sport
+          ? countedSets(sets).reduce((ms, s) => ms + (s.durationSec ?? 0) * 1000, 0)
+          : Date.parse(session.finishedAt ?? session.startedAt) - Date.parse(session.startedAt),
         sets: countedSets(sets).length,
         volumeKg: sessionVolume(sets),
         exercises: ses.filter((se) =>
           (setsBySe.get(se.id) ?? []).some((s) => s.completedAt !== null),
         ).length,
-        sport:
-          ses.length > 0 && ses.every((se) => exerciseById.get(se.exerciseId)?.type === 'sport'),
+        sport,
+        sportId: sport ? (ses[0]?.exerciseId ?? null) : null,
         prs: prsBySession.get(session.id) ?? [],
       }
     })
@@ -162,14 +169,11 @@ export type Stats = {
   volumeKg: number
   volumeMonthKg: number
   totalSets: number
-  /** Minutes of sport this week / this month (sports are not counted as workouts). */
-  activeMinutesWeek: number
-  activeMinutesMonth: number
 }
 
 /**
  * Progress tab tiles (weeks start on Sunday, see `WEEK_STARTS_ON`; days are session
- * `localDate`s). Sport sessions don't count as workouts; their time is "active minutes".
+ * `localDate`s). Gym only: sport sessions are counted apart (`computeSportStats`).
  */
 export function computeStats(training: Training, today: Date): Stats {
   const week = dayKey(startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }))
@@ -179,12 +183,6 @@ export function computeStats(training: Training, today: Date): Stats {
   const inRange = (from: string) =>
     training.sessions.filter((s) => s.session.localDate >= from && s.session.localDate <= end)
   const workouts = (from: string) => inRange(from).filter((s) => !s.sport)
-  const minutes = (from: string) =>
-    Math.round(
-      inRange(from)
-        .filter((s) => s.sport)
-        .reduce((ms, s) => ms + s.durationMs, 0) / 60_000,
-    )
   const lifting = training.sessions.filter((s) => !s.sport)
   return {
     week: workouts(week).length,
@@ -194,8 +192,6 @@ export function computeStats(training: Training, today: Date): Stats {
     volumeKg: lifting.reduce((v, s) => v + s.volumeKg, 0),
     volumeMonthKg: workouts(month).reduce((v, s) => v + s.volumeKg, 0),
     totalSets: lifting.reduce((v, s) => v + s.sets, 0),
-    activeMinutesWeek: minutes(week),
-    activeMinutesMonth: minutes(month),
   }
 }
 
@@ -203,4 +199,48 @@ export function computeStats(training: Training, today: Date): Stats {
 export function weekDays(today: Date): string[] {
   const first = startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON })
   return Array.from({ length: 7 }, (_, i) => dayKey(addDays(first, i)))
+}
+
+export type SportStats = {
+  sessionsWeek: number
+  sessionsMonth: number
+  sessionsTotal: number
+  /** Time played (ms): games only, without pauses. */
+  playMsWeek: number
+  playMsMonth: number
+  playMsTotal: number
+  gamesTotal: number
+  /** Per sport, most played first. */
+  bySport: { exercise: ExerciseRow; sessions: number; games: number; playMs: number }[]
+}
+
+/** Sports are analysed apart from the gym: sessions, games and time played. */
+export function computeSportStats(training: Training, today: Date): SportStats {
+  const week = dayKey(startOfWeek(today, { weekStartsOn: WEEK_STARTS_ON }))
+  const month = dayKey(startOfMonth(today))
+  const end = dayKey(today)
+  const sports = training.sessions.filter((s) => s.sport)
+  const since = (from: string) =>
+    sports.filter((s) => s.session.localDate >= from && s.session.localDate <= end)
+  const ms = (list: SessionSummary[]) => list.reduce((sum, s) => sum + s.durationMs, 0)
+  const per = new Map<string, SportStats['bySport'][number]>()
+  for (const s of sports) {
+    const exercise = s.sportId ? training.exercises.get(s.sportId)?.exercise : undefined
+    if (!exercise) continue
+    const entry = per.get(exercise.id) ?? { exercise, sessions: 0, games: 0, playMs: 0 }
+    entry.sessions += 1
+    entry.games += s.sets
+    entry.playMs += s.durationMs
+    per.set(exercise.id, entry)
+  }
+  return {
+    sessionsWeek: since(week).length,
+    sessionsMonth: since(month).length,
+    sessionsTotal: sports.length,
+    playMsWeek: ms(since(week)),
+    playMsMonth: ms(since(month)),
+    playMsTotal: ms(sports),
+    gamesTotal: sports.reduce((n, s) => n + s.sets, 0),
+    bySport: [...per.values()].sort((a, b) => b.playMs - a.playMs),
+  }
 }

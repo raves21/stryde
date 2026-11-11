@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { SessionTree } from '@/db/repositories/sessions'
 import { updateSession, updateSessionTimes } from '@/db/repositories/sessions'
+import { SportGamesEditor } from '@/features/workout/components/sport-games-editor'
 import { WorkoutBody } from '@/features/workout/components/workout-body'
 import { isSportTree } from '@/features/workout/is-sport'
 import { useSessionTree } from '@/features/workout/use-workout'
@@ -127,8 +128,12 @@ function EditSession({ tree }: { tree: SessionTree }) {
         </div>
       </div>
 
-      {/* A sport has no sets: its length is the start and finish times above. */}
-      {!isSportTree(tree) && <WorkoutBody tree={tree} actions={actions} />}
+      {/* A sport has games (minutes each) instead of sets. */}
+      {isSportTree(tree) ? (
+        <SportGamesEditor tree={tree} />
+      ) : (
+        <WorkoutBody tree={tree} actions={actions} />
+      )}
 
       <Textarea
         aria-label="Workout notes"

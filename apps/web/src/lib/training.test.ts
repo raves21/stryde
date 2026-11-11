@@ -1,6 +1,6 @@
 import type { ExerciseRow, SessionExerciseRow, SessionRow, SetRow } from '@stryde/shared'
 import { describe, expect, it } from 'vitest'
-import { buildTraining, computeStats, weekDays } from './training'
+import { buildTraining, computeSportStats, computeStats, weekDays } from './training'
 
 const USER = 'u'
 const AT = '2026-10-01T00:00:00.000Z'
@@ -29,7 +29,9 @@ const pickleball: ExerciseRow = {
 let n = 0
 
 /** A finished sport session of `minutes` on `localDate`: one sport exercise, one timed set. */
-function sport(localDate: string, minutes: number) {
+/** A sport session of games (minutes each) with a 10-minute break between them. */
+function sport(localDate: string, ...games: number[]) {
+  const span = games.reduce((a, b) => a + b, 0) + 10 * (games.length - 1)
   n += 1
   const start = `${localDate}T18:00:00.000Z`
   const session: SessionRow = {
@@ -38,7 +40,7 @@ function sport(localDate: string, minutes: number) {
     templateId: null,
     name: 'Pickleball',
     startedAt: start,
-    finishedAt: new Date(Date.parse(start) + minutes * 60_000).toISOString(),
+    finishedAt: new Date(Date.parse(start) + span * 60_000).toISOString(),
     timezone: 'UTC',
     localDate,
     notes: null,
@@ -53,11 +55,11 @@ function sport(localDate: string, minutes: number) {
     supersetGroup: null,
     restSeconds: null,
   }
-  const set: SetRow = {
+  const sets: SetRow[] = games.map((minutes, i) => ({
     ...base,
-    id: `sportset${n}`,
+    id: `sportset${n}-${i}`,
     sessionExerciseId: se.id,
-    position: 0,
+    position: i,
     setType: 'working',
     targetKind: 'fixed',
     targetReps: null,
@@ -68,8 +70,8 @@ function sport(localDate: string, minutes: number) {
     rir: null,
     durationSec: minutes * 60,
     completedAt: session.finishedAt,
-  }
-  return { session, se, sets: [set] }
+  }))
+  return { session, se, sets }
 }
 
 function workout(
@@ -219,13 +221,15 @@ describe('computeStats', () => {
 
 describe('sport sessions in the training summary', () => {
   const lift = workout('2026-10-27', 100, 5)
-  const p1 = sport('2026-10-26', 90) // Monday of the week of Sun 25 Oct
+  const p1 = sport('2026-10-26', 45, 45) // Monday of the week of Sun 25 Oct; 100 min on the clock
   const p2 = sport('2026-10-12', 60)
   const t = build(lift, p1, p2)
 
-  it('flags them, with their duration, and gives them no PRs or volume', () => {
+  it('flags them; their time is the games played, not the span; no PRs or volume', () => {
     expect(t.byId.get(p1.session.id)).toMatchObject({
       sport: true,
+      sportId: 'pickleball',
+      sets: 2,
       durationMs: 90 * 60_000,
       volumeKg: 0,
       prs: [],
@@ -238,7 +242,7 @@ describe('sport sessions in the training summary', () => {
     expect([...t.trainedDates].sort()).toEqual(['2026-10-12', '2026-10-26', '2026-10-27'])
   })
 
-  it('computeStats: not workouts, but active minutes', () => {
+  it('computeStats is gym only: sports are not workouts, volume or sets', () => {
     const s = computeStats(t, new Date(2026, 9, 28)) // Wednesday; week starts Sun 25 Oct
     expect({ week: s.week, month: s.month, year: s.year, total: s.total }).toEqual({
       week: 1,
@@ -248,13 +252,34 @@ describe('sport sessions in the training summary', () => {
     })
     expect(s.volumeKg).toBe(500)
     expect(s.totalSets).toBe(1)
-    expect(s.activeMinutesWeek).toBe(90)
-    expect(s.activeMinutesMonth).toBe(150)
   })
 
-  it('computeStats: a week with only sport has zero workouts and some minutes', () => {
-    const s = computeStats(build(p1), new Date(2026, 9, 28))
-    expect(s.week).toBe(0)
-    expect(s.activeMinutesWeek).toBe(90)
+  it('a week with only sport has zero workouts', () => {
+    expect(computeStats(build(p1), new Date(2026, 9, 28)).week).toBe(0)
+  })
+
+  it('computeSportStats: sessions, games and time played, per sport', () => {
+    const s = computeSportStats(t, new Date(2026, 9, 28))
+    expect(s).toMatchObject({
+      sessionsWeek: 1,
+      sessionsMonth: 2,
+      sessionsTotal: 2,
+      playMsWeek: 90 * 60_000,
+      playMsMonth: 150 * 60_000,
+      playMsTotal: 150 * 60_000,
+      gamesTotal: 3,
+    })
+    expect(s.bySport).toEqual([
+      expect.objectContaining({ sessions: 2, games: 3, playMs: 150 * 60_000 }),
+    ])
+    expect(s.bySport[0]?.exercise.id).toBe('pickleball')
+  })
+
+  it('computeSportStats is empty without sports', () => {
+    expect(computeSportStats(build(lift), new Date(2026, 9, 28))).toMatchObject({
+      sessionsTotal: 0,
+      playMsTotal: 0,
+      bySport: [],
+    })
   })
 })

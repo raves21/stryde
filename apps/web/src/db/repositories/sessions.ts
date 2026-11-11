@@ -49,7 +49,7 @@ async function insertSession(
 
 /**
  * Start a sport (pickleball, tennis…): a session named after it, with one sport exercise
- * and one open "set" that holds the time once finished. A sport is always its own session.
+ * and one open game (a set without a result yet). A sport is always its own session.
  */
 export function startSportSession(exerciseId: string, db: StrydeDb = defaultDb) {
   return mutate(
@@ -85,17 +85,59 @@ export function startSportSession(exerciseId: string, db: StrydeDb = defaultDb) 
   )
 }
 
+/** The game being played: the sport session's one set that has no result yet. */
+async function openGame(w: Writer, sessionId: string): Promise<SetRow | undefined> {
+  for (const se of await getSessionExercises(sessionId, w.db)) {
+    const open = (await getSets(se.id, w.db)).find((s) => s.completedAt === null)
+    if (open) return open
+  }
+  return undefined
+}
+
 /**
- * Finish a sport. `durationSec` (the timer, as edited) is the truth: the session is moved to
- * end now and start that long before, so its times and its one set agree.
+ * Save the game in progress with its time and open the next one (position + 1). A game is a
+ * set whose `durationSec` is the time played, not counting pauses.
+ */
+export function finishSportGame(sessionId: string, durationSec: number, db: StrydeDb = defaultDb) {
+  return mutate(
+    [...TABLES],
+    async (w) => {
+      if (durationSec < 1) throw new Error('A game needs at least a second')
+      const game = await openGame(w, sessionId)
+      if (!game) throw new Error('No game in progress')
+      const done = await w.update('sets', game.id, { durationSec, completedAt: w.now })
+      const next = await w.insert('sets', {
+        sessionExerciseId: game.sessionExerciseId,
+        position: game.position + 1,
+        setType: 'working',
+        targetKind: 'fixed',
+        targetReps: null,
+        targetRepsMax: null,
+        targetRir: null,
+        weightKg: null,
+        reps: null,
+        rir: null,
+        durationSec: null,
+        completedAt: null,
+      })
+      return { done, next }
+    },
+    db,
+  )
+}
+
+/**
+ * Finish a sport session. A game still on the timer (`pendingSec` ≥ 1) is saved as the last
+ * one; an untouched open game is dropped. At least one game is needed. The session keeps its
+ * real start and end; the play time is the sum of its games.
  */
 export function finishSportSession(
   id: string,
   {
-    durationSec,
+    pendingSec,
     notes,
     shareWithFriends,
-  }: { durationSec: number } & Pick<SessionRow, 'notes' | 'shareWithFriends'>,
+  }: { pendingSec: number } & Pick<SessionRow, 'notes' | 'shareWithFriends'>,
   db: StrydeDb = defaultDb,
 ) {
   return mutate(
@@ -103,19 +145,20 @@ export function finishSportSession(
     async (w) => {
       const session = await w.get('sessions', id)
       if (!session) throw new Error('Session not found')
-      const startedAt = new Date(Date.parse(w.now) - durationSec * 1000).toISOString()
-      for (const se of await getSessionExercises(id, w.db)) {
-        for (const set of await getSets(se.id, w.db)) {
-          await w.update('sets', set.id, { durationSec, completedAt: w.now })
+      const open = await openGame(w, id)
+      if (open) {
+        if (pendingSec >= 1) {
+          await w.update('sets', open.id, { durationSec: pendingSec, completedAt: w.now })
+        } else {
+          await w.softDelete('sets', [open.id])
         }
       }
-      return w.update('sessions', id, {
-        startedAt,
-        finishedAt: w.now,
-        localDate: localDateIn(new Date(startedAt), session.timezone),
-        notes,
-        shareWithFriends,
-      })
+      let games = 0
+      for (const se of await getSessionExercises(id, w.db)) {
+        games += (await getSets(se.id, w.db)).filter((s) => s.completedAt !== null).length
+      }
+      if (games === 0) throw new Error('Finish at least one game first')
+      return w.update('sessions', id, { finishedAt: w.now, notes, shareWithFriends })
     },
     db,
   )
@@ -181,19 +224,6 @@ export function updateSessionTimes(
         finishedAt,
         localDate: localDateIn(new Date(startedAt), session.timezone),
       })
-      // A sport's one set holds its time: keep it equal to the session's length.
-      if (finishedAt !== null) {
-        const durationSec = Math.max(
-          0,
-          Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000),
-        )
-        for (const se of await getSessionExercises(id, w.db)) {
-          if ((await w.db.exercises.get(se.exerciseId))?.type !== 'sport') continue
-          for (const set of await getSets(se.id, w.db)) {
-            await w.update('sets', set.id, { durationSec })
-          }
-        }
-      }
       return updated
     },
     db,

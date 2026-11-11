@@ -48,11 +48,15 @@ describe.skipIf(!hasDatabase)('sports on the server', () => {
     expect(set?.status).toBe('rejected')
   })
 
-  it("shows in friends' feeds as a sport: time only, no PRs, flagged for the card", async () => {
+  it("shows in friends' feeds as a sport: time played and games, no PRs, flagged for the card", async () => {
     const actor = await signUpUser()
     const friend = await signUpUser()
     await befriend(actor, friend)
-    const played = sportSession(actor.userId, { minutes: 90, finishedAgoMs: 10 * 60_000 })
+    // Three games of 30 minutes with breaks: 90 min played, though 110 from start to finish.
+    const played = sportSession(actor.userId, {
+      games: [30, 30, 30],
+      finishedAgoMs: 10 * 60_000,
+    })
     const lifted = workout(actor.userId, { name: 'Push Day', finishedAgoMs: 2 * HOUR })
     await pushRows(actor.cookie, played.rows)
     await pushRows(actor.cookie, lifted.rows)
@@ -63,7 +67,7 @@ describe.skipIf(!hasDatabase)('sports on the server', () => {
       sport: true,
       durationSec: 5400,
       exerciseCount: 1,
-      setCount: 1,
+      setCount: 3,
       prs: [],
     })
     expect(feed.items.find((i) => i.name === 'Push Day')?.sport).toBe(false)
@@ -86,7 +90,7 @@ describe.skipIf(!hasDatabase)('sports on the server', () => {
     await befriend(actor, friend)
     await pushRows(
       actor.cookie,
-      sportSession(actor.userId, { minutes: 90, finishedAgoMs: 60_000 }).rows,
+      sportSession(actor.userId, { games: [45, 45], finishedAgoMs: 60_000 }).rows,
     )
     const list = (await (
       await get('/api/notifications', friend.cookie)

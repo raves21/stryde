@@ -76,11 +76,12 @@ Exercise types and what a set records:
 ### 4.1b Sports
 A **sport** (pickleball, badminton, basketball, tennis, soccer, volleyball as presets; custom sports too) is an exercise of type `sport`, logged by **time**, not sets.
 - **Its own session**: a sport is never inside a gym workout, and never in a template. The gym exercise pickers don't list sports.
-- **Live timer**: start it from Today ("Start a sport") or the center Start sheet, pick the sport, play with a timer running, then Finish: the minutes come from the timer and can be edited, plus optional notes and "Share with friends" (default from settings). Times can be corrected later on the edit screen (the duration follows the start and finish times).
-- **Shown as time only**: history, session detail and the feed show the duration and "Sport", no sets, volume or exercises count. The exercise page charts time per session.
+- **Games on a clock**: start it from Today ("Start a sport") or the center Start sheet and pick the sport. The first **game** starts at once on a clock that begins at 0:00. **Pause** / **Resume** stop and continue the clock; **Finish game** saves that game's time and leaves the next game waiting at 0:00 (Start game 2…). **End session** saves the session: a game still on the clock counts as the last one, at least one game is needed. Optional notes and "Share with friends" (default from settings). Afterwards the minutes of each game, and the start / finish times, can be corrected on the edit screen.
+- **Time played** is the sum of the games (pauses and breaks between games are not counted). History, session detail and the feed show it with the number of games, no sets, volume or exercise counts. The sport's page charts time played per session.
 - **No personal records, no volume.**
-- **Counts as activity, not as a workout**: sport days are marked on the calendar, the year grid and the week strip ("active days"), but the workout counts (this week / month / year / total) and lifetime volume exclude sports. Their minutes appear as **Active minutes** (this week, this month) on Progress, once you have logged a sport.
-- **Social**: shared sports appear in friends' feeds ("Pickleball · 1h 15m · Sport"), with reactions, and notify friends like a workout.
+- **Analysed apart from the gym**: workout counts, volume, sets, PRs and Today's recent workouts never include sports. **Progress** and **History** get a second tab, **Sports**, once you have played one: time played (this week / this month), sessions, games, a breakdown per sport and recent sessions. Sports are not in the Exercises library.
+- **Same heatmap**: the calendar, year grid and week strip only record *whether you were active that day*, so a sport day is marked like a workout day (the week strip caption reads "N active days this week").
+- **Social**: shared sports appear in friends' feeds ("Pickleball · 1h 15m · 2 games"), with reactions, and notify friends like a workout.
 
 ### 4.2 Templates
 - Create / edit / duplicate / delete templates.

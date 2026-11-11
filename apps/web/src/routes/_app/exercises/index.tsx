@@ -6,6 +6,7 @@ import { TopBar } from '@/components/app/top-bar'
 import { Button } from '@/components/ui/button'
 import { ExerciseBrowser } from '@/features/exercises/components/exercise-browser'
 import { ExerciseFormSheet } from '@/features/exercises/components/exercise-form-sheet'
+import { GYM_TYPES } from '@/features/exercises/labels'
 
 export const Route = createFileRoute('/_app/exercises/')({
   component: ExerciseLibrary,
@@ -32,8 +33,17 @@ function ExerciseLibrary() {
           </Button>
         }
       />
-      <ExerciseBrowser onSelect={(e) => open(e.id)} onCreate={() => setCreating(true)} />
-      <ExerciseFormSheet open={creating} onOpenChange={setCreating} onSaved={(e) => open(e.id)} />
+      <ExerciseBrowser
+        types={GYM_TYPES}
+        onSelect={(e) => open(e.id)}
+        onCreate={() => setCreating(true)}
+      />
+      <ExerciseFormSheet
+        types={GYM_TYPES}
+        open={creating}
+        onOpenChange={setCreating}
+        onSaved={(e) => open(e.id)}
+      />
     </Screen>
   )
 }

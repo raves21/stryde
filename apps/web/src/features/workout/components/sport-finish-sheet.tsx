@@ -1,48 +1,47 @@
 import { useEffect, useState } from 'react'
 import { BottomSheet } from '@/components/app/bottom-sheet'
-import { NumberInput } from '@/components/app/number-input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { SessionTree } from '@/db/repositories/sessions'
 import { formatSpan } from '@/features/progress/use-training'
+import { formatElapsed } from '@/lib/workout'
 
-/** Finish a sport: the timer's minutes (editable), notes and sharing. */
+/** End a sport session: the games (the one on the clock counts), notes and sharing. */
 export function SportFinishSheet({
   tree,
   open,
   onOpenChange,
-  elapsedMs,
+  pendingMs,
   onSave,
 }: {
   tree: SessionTree
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Time on the timer when the sheet was opened. */
-  elapsedMs: number
-  onSave: (values: {
-    durationSec: number
-    notes: string | null
-    shareWithFriends: boolean
-  }) => Promise<void>
+  /** Time on the clock of the game in progress when the sheet was opened (0 = none). */
+  pendingMs: number
+  onSave: (values: { notes: string | null; shareWithFriends: boolean }) => Promise<void>
 }) {
   const { session } = tree
-  const [minutes, setMinutes] = useState<number | null>(1)
   const [notes, setNotes] = useState(session.notes ?? '')
   const [share, setShare] = useState(session.shareWithFriends)
   const [saving, setSaving] = useState(false)
 
-  // Start from the timer each time the sheet opens (not while it is open and ticking).
   // biome-ignore lint/correctness/useExhaustiveDependencies: only on open
   useEffect(() => {
     if (!open) return
-    setMinutes(Math.max(1, Math.round(elapsedMs / 60_000)))
     setNotes(session.notes ?? '')
     setShare(session.shareWithFriends)
   }, [open])
 
-  const valid = minutes !== null && minutes >= 1 && minutes <= 24 * 60
+  const done = tree.exercises
+    .flatMap((e) => e.sets)
+    .filter((s) => s.completedAt !== null)
+    .map((s) => ({ key: s.id, ms: (s.durationSec ?? 0) * 1000 }))
+  const pending = Math.floor(pendingMs / 1000) >= 1 ? Math.floor(pendingMs / 1000) * 1000 : 0
+  const games = pending > 0 ? [...done, { key: 'on-the-clock', ms: pending }] : done
+  const total = games.reduce((sum, g) => sum + g.ms, 0)
 
   return (
     <BottomSheet
@@ -52,16 +51,11 @@ export function SportFinishSheet({
       footer={
         <Button
           size="lg"
-          disabled={saving || !valid}
+          disabled={saving || games.length === 0}
           onClick={async () => {
-            if (minutes === null) return
             setSaving(true)
             try {
-              await onSave({
-                durationSec: minutes * 60,
-                notes: notes.trim() || null,
-                shareWithFriends: share,
-              })
+              await onSave({ notes: notes.trim() || null, shareWithFriends: share })
             } finally {
               setSaving(false)
             }
@@ -72,19 +66,28 @@ export function SportFinishSheet({
       }
     >
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-center gap-3">
-          <Label htmlFor="sport-minutes">Minutes played</Label>
-          <NumberInput
-            id="sport-minutes"
-            value={minutes}
-            onValueChange={setMinutes}
-            suffix="min"
-            className="h-16 w-40 text-[length:28px]"
-          />
-          <p className="tnum text-sm text-muted-foreground" aria-live="polite">
-            {valid && minutes !== null ? formatSpan(minutes * 60_000) : 'Enter 1 to 1440 minutes'}
+        <div className="flex flex-col items-center gap-1">
+          <p className="tnum font-display text-5xl leading-none font-bold">{formatSpan(total)}</p>
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {games.length === 0
+              ? 'Finish at least one game to save.'
+              : `${games.length} ${games.length === 1 ? 'game' : 'games'} played`}
           </p>
         </div>
+
+        {games.length > 0 && (
+          <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+            {games.map((g, i) => (
+              <li
+                key={g.key}
+                className="flex justify-between border-border px-4 py-3 not-last:border-b"
+              >
+                <span className="font-medium">Game {i + 1}</span>
+                <span className="tnum text-muted-foreground">{formatElapsed(g.ms)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="sport-notes">Notes</Label>

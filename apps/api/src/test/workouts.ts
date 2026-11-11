@@ -115,14 +115,24 @@ export async function befriend(a: { cookie: string }, b: { cookie: string }) {
 
 export const PICKLEBALL = PRESET_EXERCISES.find((e) => e.name === 'Pickleball')?.id ?? ''
 
-/** A finished sport session: one sport exercise and one completed set holding the time. */
+/**
+ * A finished sport session: one sport exercise with one completed set per game (minutes in
+ * `games`, 10-minute breaks between them). Default: one 90-minute game.
+ */
 export function sportSession(
   userId: string,
-  o: { name?: string; minutes?: number; finishedAgoMs?: number; reps?: number | null } = {},
+  o: {
+    name?: string
+    minutes?: number
+    games?: number[]
+    finishedAgoMs?: number
+    reps?: number | null
+  } = {},
 ) {
-  const minutes = o.minutes ?? 90
+  const games = o.games ?? [o.minutes ?? 90]
+  const span = games.reduce((a, b) => a + b, 0) + 10 * (games.length - 1)
   const finishedAt = Date.now() - (o.finishedAgoMs ?? 0)
-  const startedAt = finishedAt - minutes * 60_000
+  const startedAt = finishedAt - span * 60_000
   const common = { userId, createdAt: iso(startedAt), updatedAt: iso(finishedAt), deletedAt: null }
   const session = {
     ...common,
@@ -145,11 +155,11 @@ export function sportSession(
     supersetGroup: null,
     restSeconds: null,
   }
-  const set = {
+  const sets = games.map((minutes, i) => ({
     ...common,
     id: uuidv7(),
     sessionExerciseId: se.id,
-    position: 0,
+    position: i,
     setType: 'working',
     targetKind: 'fixed',
     targetReps: null,
@@ -160,6 +170,15 @@ export function sportSession(
     rir: null,
     durationSec: o.reps ? null : minutes * 60,
     completedAt: iso(finishedAt),
+  }))
+  return {
+    session,
+    se,
+    sets,
+    rows: [
+      { table: 'sessions', row: session as Record<string, unknown> },
+      { table: 'sessionExercises', row: se as Record<string, unknown> },
+      ...sets.map((set) => ({ table: 'sets', row: set as Record<string, unknown> })),
+    ],
   }
-  return { session, se, set, rows: rowsOf({ session, se, set }) }
 }

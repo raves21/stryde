@@ -44,7 +44,7 @@ function Home() {
         <section className="flex flex-col gap-3">
           <SectionLabel
             action={
-              training.sessions.length > 0 && (
+              training.sessions.some((s) => !s.sport) && (
                 <Button
                   variant="link"
                   size="sm"
@@ -58,12 +58,13 @@ function Home() {
           >
             Recent workouts
           </SectionLabel>
-          {training.sessions.length === 0 ? (
+          {training.sessions.every((s) => s.sport) ? (
             <p className="text-muted-foreground">
               No workouts yet. Your first one sets the baseline.
             </p>
           ) : (
             training.sessions
+              .filter((s) => !s.sport)
               .slice(0, 3)
               .map((s) => <SessionListItem key={s.session.id} summary={s} />)
           )}

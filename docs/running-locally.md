@@ -45,7 +45,7 @@ An empty feed isn't much to look at, so there is a seed script for your **local*
 bun run seed:dev
 ```
 
-It creates a `demo` account and five friends (Marco, Aiko, Sam, Lena, Diego) with 18 finished sessions over the last two weeks (four of them sports: pickleball, basketball, tennis), some workouts with personal records, plus reactions between them and a pending friend request (Priya). It goes through the real API routes, so the feed, PR badges, friend notifications and the bell all fill in as they would for real.
+It creates a `demo` account and five friends (Marco, Aiko, Sam, Lena, Diego) with 18 finished sessions over the last two weeks (four of them sports with several games each: pickleball, basketball, tennis), some workouts with personal records, plus reactions between them and a pending friend request (Priya). It goes through the real API routes, so the feed, PR badges, friend notifications and the bell all fill in as they would for real.
 
 - Sign in as **`demo`** with password **`correct-horse-battery`** (the friends use the same password).
 - **To see it from your own account instead**, sign up in the app first, then: `cd apps/api && bun src/scripts/seed-dev.ts --user <your-username>`. That makes you friends with all five and gives you Priya's pending request. (It doesn't add workouts to your own history.)

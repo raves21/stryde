@@ -18,6 +18,7 @@ import {
 } from '../db/schema'
 import { publish } from './events'
 import { friendIds } from './friend-graph'
+import { playSeconds } from './play-time'
 import { pushEnabled, sendPush } from './push'
 import { getUserSettings } from './user-settings'
 
@@ -174,10 +175,14 @@ export async function friendWorkoutFinished(
       .where(eq(sessions.id, event.sessionId))
       .limit(1)
     if (!row) return
+    // A sport reports the time its games took, a workout start to finish.
+    const played = (await playSeconds(db, [event.sessionId])).get(event.sessionId)
     const prCount = Array.isArray(row.prs) ? row.prs.length : 0
     const parts = [
       `Finished ${row.name}`,
-      span(event.finishedAt.getTime() - row.startedAt.getTime()),
+      span(
+        played !== undefined ? played * 1000 : event.finishedAt.getTime() - row.startedAt.getTime(),
+      ),
       ...(prCount > 0 ? [`${prCount} ${prCount === 1 ? 'PR' : 'PRs'}`] : []),
     ]
     const actor = await nameOf(db, event.userId)

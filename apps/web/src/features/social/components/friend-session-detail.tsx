@@ -10,6 +10,7 @@ import { SetTable } from '@/components/sets/set-table'
 import { formatSpan } from '@/features/progress/use-training'
 import { useUnit } from '@/features/settings/use-settings'
 import { formatPR } from '@/features/workout/format-pr'
+import { formatElapsed } from '@/lib/workout'
 import { ReactionBar } from './reaction-bar'
 
 /** A friend's shared workout, read-only, with their header and reactions (§5.6 friend view). */
@@ -19,6 +20,10 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
   // A sport is just its time (and notes): no set tables.
   const sportOnly =
     session.exercises.length > 0 && session.exercises.every((e) => e.type === 'sport')
+  const games = sportOnly
+    ? session.exercises.flatMap((e) => e.sets).filter((s) => s.durationSec !== null)
+    : []
+  const playMs = games.reduce((ms, g) => ms + (g.durationSec ?? 0) * 1000, 0)
   const sets = session.exercises.reduce(
     (n, e) => n + e.sets.filter((s) => s.setType === 'working').length,
     0,
@@ -38,16 +43,40 @@ export function FriendSessionDetail({ session }: { session: SessionDetail }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <StatTile
-          label="Duration"
-          value={formatSpan(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}
-        />
         {sportOnly ? (
-          <StatTile label="Sport" value={session.name} />
+          <>
+            <StatTile label="Time played" value={formatSpan(playMs)} />
+            <StatTile label="Games" value={String(games.length)} />
+          </>
         ) : (
-          <StatTile label="Sets" value={String(sets)} />
+          <>
+            <StatTile
+              label="Duration"
+              value={formatSpan(Date.parse(session.finishedAt) - Date.parse(session.startedAt))}
+            />
+            <StatTile label="Sets" value={String(sets)} />
+          </>
         )}
       </div>
+
+      {sportOnly && (
+        <section className="flex flex-col gap-2">
+          <SectionLabel>Games</SectionLabel>
+          <ul className="overflow-hidden rounded-2xl border border-border bg-surface">
+            {games.map((g, i) => (
+              <li
+                key={g.id}
+                className="flex items-center justify-between border-border px-4 py-3 not-last:border-b"
+              >
+                <span className="font-medium">Game {i + 1}</span>
+                <span className="tnum text-muted-foreground">
+                  {formatElapsed((g.durationSec ?? 0) * 1000)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {session.prs.length > 0 && (
         <section className="flex flex-col gap-2">
